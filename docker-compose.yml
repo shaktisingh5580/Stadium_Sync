@@ -1,0 +1,38 @@
+# ── Stadium Sync — Docker Compose (Local Development) ──
+# Provides PostgreSQL and Redis for local development.
+# The backend app runs directly with uvicorn (not in Docker).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: stadium-sync-db
+    environment:
+      POSTGRES_DB: stadium_sync
+      POSTGRES_USER: stadium
+      POSTGRES_PASSWORD: syncpass123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stadium -d stadium_sync"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: stadium-sync-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
+  redisdata:
