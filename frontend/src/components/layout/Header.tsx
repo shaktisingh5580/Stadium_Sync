@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Menu } from 'lucide-react';
+import { Activity } from 'lucide-react';
 
 export const Header: React.FC = () => {
   return (

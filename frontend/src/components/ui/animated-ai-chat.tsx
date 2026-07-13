@@ -8,8 +8,6 @@ import {
     Navigation,
     Trash2,
     AlertTriangle,
-    MapPin,
-    ArrowUpIcon,
     Paperclip,
     SendIcon,
     XIcon,
@@ -150,7 +148,6 @@ export function AnimatedAIChat({
     const [_isPending, startTransition] = useTransition();
     const [activeSuggestion, setActiveSuggestion] = useState<number>(-1);
     const [showCommandPalette, setShowCommandPalette] = useState(false);
-    const [recentCommand, setRecentCommand] = useState<string | null>(null);
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const { textareaRef, adjustHeight } = useAutoResizeTextarea({
         minHeight: 60,
@@ -238,8 +235,6 @@ export function AnimatedAIChat({
                     const selectedCommand = commandSuggestions[activeSuggestion];
                     setValue(selectedCommand.prefix + ' ');
                     setShowCommandPalette(false);
-                    setRecentCommand(selectedCommand.label);
-                    setTimeout(() => setRecentCommand(null), 3500);
                 }
             } else if (e.key === 'Escape') {
                 e.preventDefault();
@@ -276,8 +271,6 @@ export function AnimatedAIChat({
         const selectedCommand = commandSuggestions[index];
         setValue(selectedCommand.prefix + ' ');
         setShowCommandPalette(false);
-        setRecentCommand(selectedCommand.label);
-        setTimeout(() => setRecentCommand(null), 2000);
     };
 
     const messagesEndRef = useRef<HTMLDivElement>(null);

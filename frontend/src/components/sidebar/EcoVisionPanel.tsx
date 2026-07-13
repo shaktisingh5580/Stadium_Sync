@@ -1,6 +1,6 @@
+import { useState } from 'react';
 import { Upload, Leaf, CheckCircle2, Loader2 } from 'lucide-react';
 import { GlowCard } from '../shared/GlowCard';
-import { GlowButton } from '../shared/GlowButton';
 import type { EcoVisionResult } from '../../types';
 import { classifyWasteImage } from '../../api';
 

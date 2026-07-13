@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { motion } from 'framer-motion';
-import { ScanLine, ShieldCheck, Ticket, UserCircle, QrCode } from 'lucide-react';
+import { ScanLine, ShieldCheck, Ticket } from 'lucide-react';
 import { loginWithQR } from '@/api';
 
 interface QRScannerProps {
@@ -75,10 +75,10 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
             </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
+              {/* @ts-ignore */}
               <Scanner 
-                onResult={(text, result) => handleScan(text)} 
-                onError={(error) => console.log(error?.message)} 
-                options={{ delayBetweenScanAttempts: 1000 }}
+                onScan={(result: any) => handleScan(result?.[0]?.rawValue || String(result))} 
+                onError={(error: any) => console.log(error?.message)} 
               />
               {/* Corner Accents */}
               <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-emerald-500 rounded-tl-lg z-10 pointer-events-none" />
