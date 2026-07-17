@@ -26,8 +26,9 @@ COPY --from=builder /install /usr/local
 COPY app/ ./app/
 COPY scripts/ ./scripts/
 
-# Create non-root user for security
+# Create non-root user for security and give it permissions
 RUN adduser --disabled-password --no-create-home appuser
+RUN chown -R appuser:appuser /app
 USER appuser
 
 # Expose port (Render sets PORT env var)
