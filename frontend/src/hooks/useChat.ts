@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { sendChatMessage } from '@/api';
 
-export type UiAction = 'NONE' | 'SHOW_MAP' | 'SHOW_ROUTE' | 'REQUEST_IMAGE' | 'SHOW_ECO_RESULT' | 'DISPATCH_INCIDENT' | 'SHOW_CROWD' | 'HIDE_MAP';
+export type UiAction = 'NONE' | 'SHOW_MAP' | 'SHOW_ROUTE' | 'REQUEST_IMAGE' | 'SHOW_ECO_RESULT' | 'DISPATCH_INCIDENT' | 'SHOW_CROWD' | 'HIDE_MAP' | 'CLEAR_MAP';
 
 export interface ChatMessage {
   id: string;

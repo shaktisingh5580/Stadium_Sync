@@ -25,7 +25,7 @@ export const StadiumMap: React.FC<StadiumMapProps> = ({ className, selectedSecti
     'section-w1': 'section-s204',
   };
 
-  const getSectionStyle = (svgId: string) => {
+  const getSectionStyle = (_svgId: string) => {
     // User requested to use numbers instead of changing colors
     return undefined;
   };
