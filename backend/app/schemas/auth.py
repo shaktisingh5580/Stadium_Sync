@@ -56,6 +56,7 @@ class FanSession(BaseModel):
     match_id: str
     seat: SeatInfo
     transit_choice: Optional[str] = None
+    needs_accessibility: bool = False
     is_scanned: bool = True
 
 
@@ -77,6 +78,7 @@ class MeResponse(BaseModel):
     role: str
     seat: dict
     transit_choice: Optional[str] = None
+    needs_accessibility: bool = False
 
 
 class TokenRefreshResponse(BaseModel):

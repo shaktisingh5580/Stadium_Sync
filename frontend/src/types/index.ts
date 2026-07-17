@@ -6,6 +6,7 @@ export interface FanSession {
   holderName: string;
   matchId: string;
   transitMethod: string | null;
+  needsAccessibility: boolean;
   token?: string;
 }
 
@@ -22,6 +23,7 @@ export interface EgressRoute {
   distanceMeters: number;
   estimatedTimeMins: number;
   path: Point2D[];
+  accessibilityFeatures?: string[] | null;
 }
 
 export interface EcoVisionResult {
@@ -48,6 +50,10 @@ export interface CrowdSection {
   sectionName: string;
   densityPct: number;
   densityLevel: string;
+  predicted_mins_to_85?: number | null;
+  trend?: string | null;
+  sentiment_score?: number | null;
+  acoustic_status?: string | null;
 }
 
 export interface StadiumCrowdMap {

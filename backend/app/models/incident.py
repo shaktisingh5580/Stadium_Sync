@@ -81,6 +81,11 @@ class Incident(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         "IncidentUpdate", back_populates="incident",
         lazy="selectin", order_by="IncidentUpdate.created_at"
     )
+    assigned_volunteer = relationship(
+        "app.models.volunteer.Volunteer",
+        primaryjoin="Incident.assigned_volunteer_id == foreign(app.models.volunteer.Volunteer.id)",
+        lazy="selectin"
+    )
 
 
 class IncidentUpdate(Base, UUIDPrimaryKeyMixin, TimestampMixin):

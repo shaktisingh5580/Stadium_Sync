@@ -1,19 +1,34 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { sendChatMessage } from '@/api';
 
 export type UiAction = 'NONE' | 'SHOW_MAP' | 'SHOW_ROUTE' | 'REQUEST_IMAGE' | 'SHOW_ECO_RESULT' | 'DISPATCH_INCIDENT' | 'SHOW_CROWD' | 'HIDE_MAP';
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'system' | 'user' | 'assistant';
   content: string;
   uiAction?: UiAction;
   payload?: any;
 }
 
 export function useChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const saved = localStorage.getItem('stadium_chat_history');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.error('Failed to parse chat history', e);
+      }
+    }
+    return [];
+  });
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('stadium_chat_history', JSON.stringify(messages));
+  }, [messages]);
 
   const sendMessage = useCallback(async (content: string, imageBase64?: string) => {
     const userMessage: ChatMessage = {
@@ -58,9 +73,18 @@ export function useChat() {
     }
   }, [messages]);
 
+  const addMessage = useCallback((msg: Omit<ChatMessage, 'id'>) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      ...msg,
+    };
+    setMessages((prev) => [...prev, newMessage]);
+  }, []);
+
   return {
     messages,
     sendMessage,
+    addMessage,
     isLoading,
   };
 }

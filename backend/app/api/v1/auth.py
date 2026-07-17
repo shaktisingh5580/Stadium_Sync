@@ -96,6 +96,7 @@ async def scan_ticket(
             "match_id": fan_session.match_id,
             "seat": fan_session.seat.model_dump(),
             "transit_choice": fan_session.transit_choice,
+            "needs_accessibility": fan_session.needs_accessibility,
             "role": "fan",
         },
         expires_delta=expires_delta,
@@ -135,6 +136,7 @@ async def get_me(
         role=current_user.get("role", "fan"),
         seat=current_user.get("seat", {}),
         transit_choice=current_user.get("transit_choice"),
+        needs_accessibility=current_user.get("needs_accessibility", False),
     )
 
     return {
@@ -176,6 +178,7 @@ async def refresh_token(
             "match_id": current_user.get("match_id", ""),
             "seat": current_user.get("seat", {}),
             "transit_choice": current_user.get("transit_choice"),
+            "needs_accessibility": current_user.get("needs_accessibility", False),
             "role": current_user.get("role", "fan"),
         },
         expires_delta=expires_delta,

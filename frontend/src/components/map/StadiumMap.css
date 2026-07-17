@@ -94,6 +94,15 @@
         stroke-linejoin: round;
         filter: url(#glow-green);
       }
+      .accessible-route-path {
+        fill: none;
+        stroke: #3b82f6;
+        stroke-width: 4;
+        stroke-dasharray: 12 6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        filter: url(#glow-blue);
+      }
 
       /* Animations */
       @keyframes pulse-glow {

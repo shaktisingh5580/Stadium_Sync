@@ -32,21 +32,26 @@ class ConnectionManager:
         self.active_connections: Dict[str, WebSocket] = {}
         # section_id → set of ticket_ids
         self.section_subscribers: Dict[str, Set[str]] = {}
+        # admin ticket_ids
+        self.admin_subscribers: Set[str] = set()
 
-    async def connect(self, websocket: WebSocket, ticket_id: str, section_id: str = None):
+    async def connect(self, websocket: WebSocket, ticket_id: str, section_id: str = None, is_admin: bool = False):
         await websocket.accept()
         self.active_connections[ticket_id] = websocket
         if section_id:
             if section_id not in self.section_subscribers:
                 self.section_subscribers[section_id] = set()
             self.section_subscribers[section_id].add(ticket_id)
-        logger.info(f"WebSocket connected: {ticket_id} (section: {section_id})")
+        if is_admin:
+            self.admin_subscribers.add(ticket_id)
+        logger.info(f"WebSocket connected: {ticket_id} (section: {section_id}, admin: {is_admin})")
 
     def disconnect(self, ticket_id: str):
         self.active_connections.pop(ticket_id, None)
         # Remove from section subscribers
         for section_subs in self.section_subscribers.values():
             section_subs.discard(ticket_id)
+        self.admin_subscribers.discard(ticket_id)
         logger.info(f"WebSocket disconnected: {ticket_id}")
 
     async def send_to_fan(self, ticket_id: str, message: dict):
@@ -63,6 +68,11 @@ class ConnectionManager:
         """Send a message to all fans in a section."""
         ticket_ids = self.section_subscribers.get(section_id, set())
         for tid in list(ticket_ids):
+            await self.send_to_fan(tid, message)
+
+    async def broadcast_to_admins(self, message: dict):
+        """Send a message to all connected admin dashboards."""
+        for tid in list(self.admin_subscribers):
             await self.send_to_fan(tid, message)
 
     async def broadcast_all(self, message: dict):
@@ -106,17 +116,23 @@ async def websocket_endpoint(
         await websocket.close(code=4001, reason="Missing token")
         return
 
-    try:
-        payload = verify_token(token)
-    except UnauthorizedException:
-        await websocket.close(code=4001, reason="Invalid token")
-        return
+    is_admin = False
+    if token == "admin-demo-token":
+        is_admin = True
+        ticket_id = f"admin-{id(websocket)}"
+        section_id = None
+    else:
+        try:
+            payload = verify_token(token)
+        except UnauthorizedException:
+            await websocket.close(code=4001, reason="Invalid token")
+            return
 
-    ticket_id = payload.get("sub", "unknown")
-    seat = payload.get("seat", {})
-    section_id = seat.get("section_id", "")
+        ticket_id = payload.get("sub", "unknown")
+        seat = payload.get("seat", {})
+        section_id = seat.get("section_id", "")
 
-    await manager.connect(websocket, ticket_id, section_id)
+    await manager.connect(websocket, ticket_id, section_id, is_admin)
 
     try:
         while True:

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StadiumChat } from '@/components/StadiumChat';
 import { QRScanner } from '@/components/auth/QRScanner';
+import { AdminDashboard } from '@/pages/AdminDashboard';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -18,6 +19,10 @@ export default function App() {
   const handleScanSuccess = () => {
     setIsAuthenticated(true);
   };
+
+  if (window.location.search.includes('admin=true')) {
+    return <AdminDashboard />;
+  }
 
   return (
     <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">

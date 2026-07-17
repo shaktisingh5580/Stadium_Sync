@@ -88,9 +88,9 @@ async def get_current_admin(
 async def verify_api_key(
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
 ) -> str:
-    """
-    Validate IoT API key for machine-to-machine endpoints.
+    """    Validate IoT API key for machine-to-machine endpoints.
     Used by crowd density ingest endpoints.
+
     """
     if not x_api_key:
         raise UnauthorizedException("Missing X-API-Key header")

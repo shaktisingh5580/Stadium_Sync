@@ -163,6 +163,7 @@ async def seed_database():
                 holder_name=name,
                 holder_email=f"{name.lower().replace(' ', '.')}@example.com",
                 is_active=True,
+                needs_accessibility=(i == 0),
             )
             db.add(ticket)
             tickets.append(ticket)

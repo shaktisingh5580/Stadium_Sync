@@ -7,9 +7,29 @@ interface StadiumMapProps {
   onSectionClick?: (sectionId: string) => void;
   fanSeat?: { x: number, y: number };
   egressRoute?: { x: number, y: number }[];
+  needsAccessibility?: boolean;
+  heatmapData?: Record<string, number>;
+  targetPoi?: { x: number, y: number, name: string, type: string };
 }
 
-export const StadiumMap: React.FC<StadiumMapProps> = ({ className, selectedSection, onSectionClick, fanSeat, egressRoute }) => {
+export const StadiumMap: React.FC<StadiumMapProps> = ({ className, selectedSection, onSectionClick, fanSeat, egressRoute, needsAccessibility, heatmapData, targetPoi }) => {
+  // Hardcoded mapping from SVG regions to mock backend section IDs
+  const sectionIdMap: Record<string, string> = {
+    'section-n1': 'section-n101',
+    'section-n2': 'section-n102',
+    'section-e1': 'section-n103',
+    'section-e2': 'section-n104',
+    'section-s2': 'section-s201',
+    'section-s1': 'section-s202',
+    'section-w2': 'section-s203',
+    'section-w1': 'section-s204',
+  };
+
+  const getSectionStyle = (svgId: string) => {
+    // User requested to use numbers instead of changing colors
+    return undefined;
+  };
+
   return (
     <div className={`relative w-full h-full max-w-[800px] max-h-[800px] aspect-square drop-shadow-[0_0_25px_rgba(34,197,94,0.1)] ${className || ''}`}>
       
@@ -37,6 +57,10 @@ export const StadiumMap: React.FC<StadiumMapProps> = ({ className, selectedSecti
   <defs>
     {/* ═══ FILTERS ═══ */}
     <filter id="glow-green" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="glow-blue" x="-30%" y="-30%" width="160%" height="160%">
       <feGaussianBlur stdDeviation="5" result="blur"/>
       <feComposite in="SourceGraphic" in2="blur" operator="over"/>
     </filter>
@@ -127,56 +151,56 @@ export const StadiumMap: React.FC<StadiumMapProps> = ({ className, selectedSecti
        ════════════════════════════════════════════════════════════ */}
   <g id="sections">
     {/* N1 — North-West section (227° → 262°) */}
-    <path id="section-n1" className={`section ${selectedSection === "section-n1" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-n1")}
+    <path id="section-n1" style={getSectionStyle("section-n1")} className={`section ${selectedSection === "section-n1" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-n1")}
           d="M 161.3 144.0
              A 350 350 0 0 1 351.3 53.4
              L 366.6 162.3
              A 240 240 0 0 0 236.3 224.5 Z"/>
 
     {/* N2 — North-East section (278° → 313°) */}
-    <path id="section-n2" className={`section ${selectedSection === "section-n2" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-n2")}
+    <path id="section-n2" style={getSectionStyle("section-n2")} className={`section ${selectedSection === "section-n2" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-n2")}
           d="M 448.7 53.4
              A 350 350 0 0 1 638.7 144.0
              L 563.7 224.5
              A 240 240 0 0 0 433.4 162.3 Z"/>
 
     {/* E1 — East-Upper section (317° → 352°) */}
-    <path id="section-e1" className={`section ${selectedSection === "section-e1" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-e1")}
+    <path id="section-e1" style={getSectionStyle("section-e1")} className={`section ${selectedSection === "section-e1" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-e1")}
           d="M 656.0 161.3
              A 350 350 0 0 1 746.6 351.3
              L 637.7 366.6
              A 240 240 0 0 0 575.5 236.3 Z"/>
 
     {/* E2 — East-Lower section (8° → 43°) */}
-    <path id="section-e2" className={`section ${selectedSection === "section-e2" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-e2")}
+    <path id="section-e2" style={getSectionStyle("section-e2")} className={`section ${selectedSection === "section-e2" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-e2")}
           d="M 746.6 448.7
              A 350 350 0 0 1 656.0 638.7
              L 575.5 563.7
              A 240 240 0 0 0 637.7 433.4 Z"/>
 
     {/* S2 — South-East section (47° → 82°) */}
-    <path id="section-s2" className={`section ${selectedSection === "section-s2" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-s2")}
+    <path id="section-s2" style={getSectionStyle("section-s2")} className={`section ${selectedSection === "section-s2" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-s2")}
           d="M 638.7 656.0
              A 350 350 0 0 1 448.7 746.6
              L 433.4 637.7
              A 240 240 0 0 0 563.7 575.5 Z"/>
 
     {/* S1 — South-West section (98° → 133°) */}
-    <path id="section-s1" className={`section ${selectedSection === "section-s1" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-s1")}
+    <path id="section-s1" style={getSectionStyle("section-s1")} className={`section ${selectedSection === "section-s1" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-s1")}
           d="M 351.3 746.6
              A 350 350 0 0 1 161.3 656.0
              L 236.3 575.5
              A 240 240 0 0 0 366.6 637.7 Z"/>
 
     {/* W2 — West-Lower section (137° → 172°) */}
-    <path id="section-w2" className={`section ${selectedSection === "section-w2" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-w2")}
+    <path id="section-w2" style={getSectionStyle("section-w2")} className={`section ${selectedSection === "section-w2" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-w2")}
           d="M 144.0 638.7
              A 350 350 0 0 1 53.4 448.7
              L 162.3 433.4
              A 240 240 0 0 0 224.5 563.7 Z"/>
 
     {/* W1 — West-Upper section (188° → 223°) */}
-    <path id="section-w1" className={`section ${selectedSection === "section-w1" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-w1")}
+    <path id="section-w1" style={getSectionStyle("section-w1")} className={`section ${selectedSection === "section-w1" ? "selected" : ""}`} onClick={() => onSectionClick?.("section-w1")}
           d="M 53.4 351.3
              A 350 350 0 0 1 144.0 161.3
              L 224.5 236.3
@@ -188,14 +212,29 @@ export const StadiumMap: React.FC<StadiumMapProps> = ({ className, selectedSecti
        Positioned at midpoint angle of each section, at r=295
        ════════════════════════════════════════════════════════════ */}
   <g id="section-labels">
-    <text x="273" y="168" className="section-label">N1</text>
-    <text x="527" y="168" className="section-label">N2</text>
-    <text x="632" y="293" className="section-label">E1</text>
-    <text x="632" y="507" className="section-label">E2</text>
-    <text x="527" y="632" className="section-label">S2</text>
-    <text x="273" y="632" className="section-label">S1</text>
-    <text x="168" y="507" className="section-label">W2</text>
-    <text x="168" y="293" className="section-label">W1</text>
+    {[
+      { id: 'section-n1', label: 'N1', x: 273, y: 168 },
+      { id: 'section-n2', label: 'N2', x: 527, y: 168 },
+      { id: 'section-e1', label: 'E1', x: 632, y: 293 },
+      { id: 'section-e2', label: 'E2', x: 632, y: 507 },
+      { id: 'section-s2', label: 'S2', x: 527, y: 632 },
+      { id: 'section-s1', label: 'S1', x: 273, y: 632 },
+      { id: 'section-w2', label: 'W2', x: 168, y: 507 },
+      { id: 'section-w1', label: 'W1', x: 168, y: 293 },
+    ].map(s => {
+      const backendId = sectionIdMap[s.id];
+      const density = backendId ? heatmapData?.[backendId] : undefined;
+      return (
+        <React.Fragment key={s.id}>
+          <text x={s.x} y={s.y} className="section-label">{s.label}</text>
+          {density !== undefined && (
+            <text x={s.x} y={s.y + 24} className="section-label" style={{ fontSize: '16px', fill: 'rgba(255,255,255,1)', fontWeight: 'bold' }}>
+              {density.toFixed(1)}%
+            </text>
+          )}
+        </React.Fragment>
+      );
+    })}
   </g>
 
   {/* ════════════════════════════════════════════════════════════
@@ -379,7 +418,7 @@ export const StadiumMap: React.FC<StadiumMapProps> = ({ className, selectedSecti
     {egressRoute && egressRoute.length > 0 && (
       <polyline 
         points={egressRoute.map(p => `${p.x},${p.y}`).join(' ')} 
-        className="route-path animate-pulse"
+        className={needsAccessibility ? "accessible-route-path animate-pulse" : "route-path animate-pulse"}
       />
     )}
   </g>
@@ -388,6 +427,17 @@ export const StadiumMap: React.FC<StadiumMapProps> = ({ className, selectedSecti
     <g id="fan-marker">
     {fanSeat && (
       <circle className="seat-pulse" cx={fanSeat.x} cy={fanSeat.y} r="7" fill="#22c55e" filter="url(#glow-green)"/>
+    )}
+  </g>
+
+  {/* POI marker: glowing destination for routing or finding locations */}
+  <g id="poi-marker">
+    {targetPoi && targetPoi.type !== 'seat' && (
+      <g transform={`translate(${targetPoi.x}, ${targetPoi.y})`}>
+        <circle cx="0" cy="0" r="8" fill="#f43f5e" filter="url(#glow-amber)" className="animate-pulse" />
+        <circle cx="0" cy="0" r="16" fill="none" stroke="#f43f5e" strokeWidth="1.5" strokeDasharray="4 4" className="animate-[spin_8s_linear_infinite]" />
+        <text x="18" y="4" fill="#f43f5e" fontSize="12" fontWeight="bold" style={{textShadow: "0 0 4px #000"}}>{targetPoi.name}</text>
+      </g>
     )}
   </g>
 </svg>

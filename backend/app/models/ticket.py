@@ -134,6 +134,7 @@ class Ticket(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     transit_choice: Mapped[str] = mapped_column(
         String(20), nullable=True, default=None
     )
+    needs_accessibility: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_scanned: Mapped[bool] = mapped_column(Boolean, default=False)
 

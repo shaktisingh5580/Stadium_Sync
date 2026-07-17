@@ -91,8 +91,17 @@ async def compute_egress_route(
     # 3. Find closest target gate (Euclidean distance on SVG)
     best_gate = None
     
+    poi_targets = {
+        "washroom": {"name": "Nearest Washroom", "x": 550.0, "y": 250.0},
+        "food_court": {"name": "Nearest Food Court", "x": 250.0, "y": 250.0},
+        "medical": {"name": "Medical Station", "x": 600.0, "y": 400.0}
+    }
+
     # If a specific target location (like a gate) was requested, use it
-    if target_location and target_location.startswith("gate_"):
+    poi_dest = None
+    if target_location in poi_targets:
+        poi_dest = poi_targets[target_location]
+    elif target_location and target_location.startswith("gate_"):
         for gate in all_gates:
             if gate.name.lower().replace(" ", "_") == target_location:
                 best_gate = gate
@@ -117,56 +126,75 @@ async def compute_egress_route(
     # 4. Generate Path Points (Avoiding the center pitch!)
     # We calculate polar coordinates relative to the center (400, 400)
     # and route the fan along a safe circular path (e.g., radius 360, outer concourse)
+    if poi_dest:
+        min_dist = math.hypot(poi_dest["x"] - seat.svg_x, poi_dest["y"] - seat.svg_y)
+    else:
+        min_dist = math.hypot(best_gate.svg_x - seat.svg_x, best_gate.svg_y - seat.svg_y)
+
+    # 4. Generate Path Points
     cx, cy = 400.0, 400.0
     
     seat_dx = seat.svg_x - cx
     seat_dy = seat.svg_y - cy
     seat_th = math.atan2(seat_dy, seat_dx)
     
-    gate_dx = best_gate.svg_x - cx
-    gate_dy = best_gate.svg_y - cy
+    if poi_dest:
+        dest_x = poi_dest["x"]
+        dest_y = poi_dest["y"]
+        dest_name = poi_dest["name"]
+    else:
+        dest_x = best_gate.svg_x
+        dest_y = best_gate.svg_y
+        dest_name = best_gate.name
+
+    gate_dx = dest_x - cx
+    gate_dy = dest_y - cy
     gate_th = math.atan2(gate_dy, gate_dx)
     
     # Safe radius for walking (outer concourse just past the seats)
-    safe_r = 360.0
+    walk_radius = 360.0
     
-    # Calculate shortest angular distance
-    diff = gate_th - seat_th
-    # Normalize to [-pi, pi]
-    diff = (diff + math.pi) % (2 * math.pi) - math.pi
+    path = []
+    # 1) Point exactly at seat
+    path.append(Point2D(x=seat.svg_x, y=seat.svg_y))
     
-    path = [Point2D(x=seat.svg_x, y=seat.svg_y)]
+    # 2) Move outward to concourse ring
+    start_concourse_x = cx + walk_radius * math.cos(seat_th)
+    start_concourse_y = cy + walk_radius * math.sin(seat_th)
+    path.append(Point2D(x=start_concourse_x, y=start_concourse_y))
     
-    # 1. Step radially out to the concourse
-    path.append(Point2D(
-        x=cx + safe_r * math.cos(seat_th),
-        y=cy + safe_r * math.sin(seat_th)
-    ))
-    
-    # 2. Arc along the concourse
-    steps = max(12, int(abs(diff) * 10))
-    for i in range(1, steps + 1):
-        th = seat_th + diff * (i / steps)
-        px = cx + safe_r * math.cos(th)
-        py = cy + safe_r * math.sin(th)
+    # 3) Arc along the concourse to the destination angle
+    steps = 6
+    th_diff = (gate_th - seat_th) % (2 * math.pi)
+    if th_diff > math.pi:
+        th_diff -= 2 * math.pi
+        
+    for i in range(1, steps):
+        inter_th = seat_th + th_diff * (i / steps)
+        px = cx + walk_radius * math.cos(inter_th)
+        py = cy + walk_radius * math.sin(inter_th)
         path.append(Point2D(x=px, y=py))
         
-    # 3. Step radially to the gate
-    path.append(Point2D(x=best_gate.svg_x, y=best_gate.svg_y))
-
-    # Convert SVG distance to rough real-world metrics
-    # Assumption: 1 SVG unit ~ 1.5 meters
-    distance_meters = int(min_dist * 1.5)
+    # 4) The destination itself
+    path.append(Point2D(x=dest_x, y=dest_y))
     
-    # Average walking speed ~ 80 meters / min in a crowd
-    estimated_time = max(1, int(distance_meters / 80))
+    # Simple distance estimation (1 px approx 0.5 meters)
+    dist_meters = round(min_dist * 0.5)
+    
+    # Time estimation (~80 meters per min walking)
+    time_mins = max(1, round(dist_meters / 80.0))
+    
+    accessibility_features = None
+    if ticket.needs_accessibility:
+        accessibility_features = ["Elevator Access", "Ramps", "Level Surfaces"]
 
     return EgressRouteResponse(
-        ticket_id=ticket.id,
+        ticket_id=ticket_id,
+        target_gate_name=dest_name,
+        target_gate_id=best_gate.id if best_gate else "poi",
         transit_method=transit_method,
-        target_gate_id=best_gate.id,
-        target_gate_name=best_gate.name,
-        distance_meters=distance_meters,
-        estimated_time_mins=estimated_time,
+        distance_meters=dist_meters,
+        estimated_time_mins=time_mins,
         path=path,
+        accessibility_features=accessibility_features,
     )

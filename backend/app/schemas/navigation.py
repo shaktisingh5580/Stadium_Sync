@@ -39,3 +39,7 @@ class EgressRouteResponse(BaseModel):
         ...,
         description="List of SVG points representing the route from seat to gate"
     )
+    accessibility_features: Optional[List[str]] = Field(
+        default=None,
+        description="List of accessibility features on the route (e.g., 'Elevators', 'Ramps')"
+    )

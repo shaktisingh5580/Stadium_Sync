@@ -45,9 +45,11 @@ class Settings(BaseSettings):
     REDIS_URL: str = ""
     REDIS_ENABLED: bool = False
 
-    # ── Google Gemini AI ──
-    GEMINI_API_KEY: str = ""
-    GEMINI_API_KEYS: str = ""  # Comma-separated list for round-robin
+    # ── Google Gemini AI & NVIDIA ──
+    GEMINI_API_KEY_1: str = ""
+    GEMINI_API_KEY_2: str = ""
+    GEMINI_API_KEY_3: str = ""
+    NVIDIA_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.0-flash"
 
     # ── Telegram Bots ──
@@ -68,6 +70,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
+        "*",  # Allow all origins for Vercel preview URLs
     ]
 
     # ── IoT API Key ──

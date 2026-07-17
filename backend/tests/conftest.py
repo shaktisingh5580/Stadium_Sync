@@ -125,6 +125,7 @@ def make_fan_token(
     seat: Dict[str, Any] = None,
     holder_name: str = "Test Fan",
     match_id: str = "M2026-QF1",
+    needs_accessibility: bool = False,
 ) -> str:
     """Generate a test JWT for a fan."""
     if seat is None:
@@ -135,6 +136,7 @@ def make_fan_token(
             "seat": seat,
             "holder_name": holder_name,
             "match_id": match_id,
+            "needs_accessibility": needs_accessibility,
             "role": "fan",
         }
     )

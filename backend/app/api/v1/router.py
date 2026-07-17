@@ -54,3 +54,8 @@ v1_router.include_router(websocket_router)
 # ── Phase 6: Agentic Chat ──
 from app.api.v1.chat import router as chat_router
 v1_router.include_router(chat_router)
+
+# ── Phase 7: Admin Command Center ──
+from app.api.v1.admin import router as admin_router
+v1_router.include_router(admin_router)
+

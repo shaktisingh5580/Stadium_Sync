@@ -123,6 +123,7 @@ interface CommandSuggestion {
 
 import type { ChatMessage } from '@/hooks/useChat';
 import { MessageBubble } from '@/components/ui/message-bubble';
+import type { FanSession } from '@/types';
 
 export interface AnimatedAIChatProps {
     onSendMessage?: (message: string, imageBase64?: string) => void;
@@ -131,6 +132,7 @@ export interface AnimatedAIChatProps {
     title?: string;
     subtitle?: string;
     messages?: ChatMessage[];
+    fanSession?: FanSession | null;
 }
 
 // ─── Main component ────────────────────────────────────
@@ -142,10 +144,13 @@ export function AnimatedAIChat({
     title = "Welcome to Stadium Sync 🏟️",
     subtitle = "Scan your ticket or ask me anything about the stadium",
     messages = [],
+    fanSession,
 }: AnimatedAIChatProps) {
     const [value, setValue] = useState("");
-    const [attachments, setAttachments] = useState<string[]>([]);
+    const [attachment, setAttachment] = useState<{name: string, base64: string} | null>(null);
+    const [isCooldown, setIsCooldown] = useState(false);
     const [_isPending, startTransition] = useTransition();
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [activeSuggestion, setActiveSuggestion] = useState<number>(-1);
     const [showCommandPalette, setShowCommandPalette] = useState(false);
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -249,22 +254,37 @@ export function AnimatedAIChat({
     };
 
     const handleSendMessage = () => {
-        if (value.trim() && onSendMessage) {
+        if ((value.trim() || attachment) && onSendMessage && !isCooldown) {
+            setIsCooldown(true);
+            setTimeout(() => setIsCooldown(false), 2000);
+            
             startTransition(() => {
-                onSendMessage(value.trim());
+                onSendMessage(value.trim(), attachment?.base64);
                 setValue("");
+                setAttachment(null);
                 adjustHeight(true);
             });
         }
     };
 
     const handleAttachFile = () => {
-        const mockFileName = `file-${Math.floor(Math.random() * 1000)}.pdf`;
-        setAttachments(prev => [...prev, mockFileName]);
+        fileInputRef.current?.click();
     };
 
-    const removeAttachment = (index: number) => {
-        setAttachments(prev => prev.filter((_, i) => i !== index));
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAttachment({ name: file.name, base64: reader.result as string });
+            };
+            reader.readAsDataURL(file);
+        }
+        if (e.target) e.target.value = '';
+    };
+
+    const removeAttachment = () => {
+        setAttachment(null);
     };
 
     const selectCommandSuggestion = (index: number) => {
@@ -321,6 +341,26 @@ export function AnimatedAIChat({
                             >
                                 {subtitle}
                             </motion.p>
+                            {fanSession && (
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.4 }}
+                                    className="mt-4 inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mx-auto"
+                                >
+                                    <span className="font-semibold text-emerald-300 text-sm">{fanSession.holderName}</span>
+                                    <span className="w-1 h-1 rounded-full bg-white/20" />
+                                    <span className="text-xs text-white/60">Sec {fanSession.section}</span>
+                                    {fanSession.needsAccessibility && (
+                                        <>
+                                            <span className="w-1 h-1 rounded-full bg-white/20" />
+                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase tracking-wider">
+                                                ♿ Accessible Route
+                                            </span>
+                                        </>
+                                    )}
+                                </motion.div>
+                            )}
                         </div>
                     )}
 
@@ -330,6 +370,27 @@ export function AnimatedAIChat({
                             {messages.map((msg) => (
                                 <MessageBubble key={msg.id} message={msg} />
                             ))}
+                            
+                            {/* Typing Indicator moved into chat list */}
+                            <AnimatePresence>
+                                {isLoading && (
+                                    <motion.div
+                                        className="flex items-center gap-3 w-fit backdrop-blur-2xl bg-white/[0.05] rounded-2xl rounded-tl-sm px-4 py-3 shadow-lg border border-emerald-500/10"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 10 }}
+                                    >
+                                        <div className="w-8 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-center">
+                                            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-white/70">
+                                            <span>Stadium AI is thinking</span>
+                                            <TypingDots />
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
                             <div ref={messagesEndRef} />
                         </div>
                     )}
@@ -408,35 +469,45 @@ export function AnimatedAIChat({
                                 )}
                                 style={{ overflow: "hidden" }}
                                 showRing={false}
+                                disabled={isLoading || isCooldown}
                             />
                         </div>
 
+                        {/* Hidden File Input */}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            ref={fileInputRef}
+                            className="hidden"
+                            onChange={handleFileChange}
+                        />
+
                         {/* Attachments */}
                         <AnimatePresence>
-                            {attachments.length > 0 && (
+                            {attachment && (
                                 <motion.div
                                     className="px-4 pb-3 flex gap-2 flex-wrap"
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: "auto" }}
                                     exit={{ opacity: 0, height: 0 }}
                                 >
-                                    {attachments.map((file, index) => (
-                                        <motion.div
-                                            key={index}
-                                            className="flex items-center gap-2 text-xs bg-white/[0.03] py-1.5 px-3 rounded-lg text-white/70"
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.9 }}
+                                    <motion.div
+                                        className="flex items-center gap-2 text-xs bg-white/[0.03] py-1.5 px-3 rounded-lg text-white/70"
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                    >
+                                        {attachment.base64.startsWith('data:image') && (
+                                            <img src={attachment.base64} alt="preview" className="w-6 h-6 object-cover rounded" />
+                                        )}
+                                        <span className="truncate max-w-[150px]">{attachment.name}</span>
+                                        <button
+                                            onClick={removeAttachment}
+                                            className="text-white/40 hover:text-white transition-colors"
                                         >
-                                            <span>{file}</span>
-                                            <button
-                                                onClick={() => removeAttachment(index)}
-                                                className="text-white/40 hover:text-white transition-colors"
-                                            >
-                                                <XIcon className="w-3 h-3" />
-                                            </button>
-                                        </motion.div>
-                                    ))}
+                                            <XIcon className="w-3 h-3" />
+                                        </button>
+                                    </motion.div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -474,21 +545,23 @@ export function AnimatedAIChat({
                                 onClick={handleSendMessage}
                                 whileHover={{ scale: 1.01 }}
                                 whileTap={{ scale: 0.98 }}
-                                disabled={isLoading || !value.trim()}
+                                disabled={isLoading || (!value.trim() && !attachment) || isCooldown}
                                 className={cn(
                                     "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                                     "flex items-center gap-2",
-                                    value.trim()
+                                    (value.trim() || attachment) && !isCooldown
                                         ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
                                         : "bg-white/[0.05] text-white/40"
                                 )}
                             >
                                 {isLoading ? (
                                     <LoaderIcon className="w-4 h-4 animate-[spin_2s_linear_infinite]" />
+                                ) : isCooldown ? (
+                                    <LoaderIcon className="w-4 h-4 animate-[spin_2s_linear_infinite] opacity-50" />
                                 ) : (
                                     <SendIcon className="w-4 h-4" />
                                 )}
-                                <span>Send</span>
+                                <span>{isCooldown ? "Wait..." : "Send"}</span>
                             </motion.button>
                         </div>
                     </motion.div>
@@ -513,27 +586,7 @@ export function AnimatedAIChat({
                 </motion.div>
             </div>
 
-            {/* Typing Indicator */}
-            <AnimatePresence>
-                {isLoading && (
-                    <motion.div
-                        className="fixed bottom-8 left-1/2 transform -translate-x-1/2 backdrop-blur-2xl bg-white/[0.02] rounded-full px-4 py-2 shadow-lg border border-emerald-500/10"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-center">
-                                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-white/70">
-                                <span>Stadium AI is thinking</span>
-                                <TypingDots />
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
 
             {/* Mouse follow glow */}
             {inputFocused && (

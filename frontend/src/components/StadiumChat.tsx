@@ -3,18 +3,54 @@ import { AnimatedAIChat } from './ui/animated-ai-chat';
 import { useChat } from '@/hooks/useChat';
 import { StadiumMap } from './map/StadiumMap';
 import { AnimatePresence, motion } from 'framer-motion';
-import { XIcon, MapIcon } from 'lucide-react';
+import { XIcon, MapIcon, BadgePercent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRealtime } from '@/hooks/useRealtime';
 import { EgressAlert } from './ui/EgressAlert';
 import { triggerEgressSimulation } from '@/api';
+import { fetchFanSession } from '@/api';
+import type { FanSession } from '@/types';
 
 export const StadiumChat: React.FC = () => {
-  const { messages, sendMessage, isLoading } = useChat();
-  const { isConnected, egressData, clearEgressAlert } = useRealtime();
+  const { messages, sendMessage, addMessage, isLoading } = useChat();
+  const { isConnected, egressData, emergencyData, flashData, chatData, clearEgressAlert, clearFlashAlert, clearChatAlert, clearEmergencyAlert } = useRealtime();
   const [mapVisible, setMapVisible] = useState(false);
   const [activeRoute, setActiveRoute] = useState<{ x: number, y: number }[] | undefined>();
   const [activeSeat, setActiveSeat] = useState<{ x: number, y: number } | undefined>();
+  const [activePoi, setActivePoi] = useState<{x: number, y: number, name: string, type: string} | undefined>();
+  const [activeHeatmap, setActiveHeatmap] = useState<Record<string, number> | undefined>();
+  const [session, setSession] = useState<FanSession | null>(null);
+
+  useEffect(() => {
+    fetchFanSession().then(data => setSession(data)).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (chatData) {
+      addMessage({
+        role: chatData.role,
+        content: chatData.content,
+        uiAction: 'NONE'
+      });
+      clearChatAlert();
+    }
+  }, [chatData, addMessage, clearChatAlert]);
+
+  // Handle emergency egress automatically
+  useEffect(() => {
+    if (emergencyData && egressData) {
+      setMapVisible(true);
+      setActiveRoute(egressData.path);
+      setActiveSeat(egressData.path[0]);
+      addMessage({
+        role: 'system',
+        content: `EMERGENCY EVACUATE, LEAVE THE STADIUM IMMEDIATELY. Your optimal route to ${egressData.target_gate_name} has been displayed on the map.`,
+        uiAction: 'SHOW_ROUTE'
+      });
+      clearEgressAlert();
+      clearEmergencyAlert();
+    }
+  }, [emergencyData, egressData, addMessage, clearEgressAlert, clearEmergencyAlert]);
 
   // Parse UI Actions from the latest assistant message
   useEffect(() => {
@@ -27,10 +63,19 @@ export const StadiumChat: React.FC = () => {
         case 'SHOW_MAP':
           setMapVisible(true);
           setActiveRoute(undefined);
-          if (latestMessage.payload?.target === 'seat' && latestMessage.payload?.seat_coordinates) {
+          if (latestMessage.payload?.poi) {
+            setActivePoi(latestMessage.payload.poi);
+            if (latestMessage.payload.poi.type === 'seat') {
+              setActiveSeat({ x: latestMessage.payload.poi.x, y: latestMessage.payload.poi.y });
+            } else {
+              setActiveSeat(undefined);
+            }
+          } else if (latestMessage.payload?.target === 'seat' && latestMessage.payload?.seat_coordinates) {
             setActiveSeat(latestMessage.payload.seat_coordinates);
+            setActivePoi(undefined);
           } else {
             setActiveSeat(undefined);
+            setActivePoi(undefined);
           }
           break;
         case 'SHOW_ROUTE':
@@ -41,6 +86,11 @@ export const StadiumChat: React.FC = () => {
             if (routePath && routePath.length > 0) {
               setActiveSeat(routePath[0]);
             }
+          }
+          if (latestMessage.payload?.poi) {
+            setActivePoi(latestMessage.payload.poi);
+          } else {
+            setActivePoi(undefined);
           }
           break;
         case 'SHOW_ECO_RESULT':
@@ -53,8 +103,27 @@ export const StadiumChat: React.FC = () => {
             }
           }
           break;
+        case 'SHOW_CROWD':
+          setMapVisible(true);
+          setActiveRoute(undefined);
+          setActiveSeat(undefined);
+          setActivePoi(undefined);
+          if (latestMessage.payload?.heatmapData) {
+            setActiveHeatmap(latestMessage.payload.heatmapData);
+          }
+          break;
+        case 'CLEAR_MAP':
+          setActiveRoute(undefined);
+          setActiveSeat(undefined);
+          setActivePoi(undefined);
+          setActiveHeatmap(undefined);
+          break;
         case 'HIDE_MAP':
           setMapVisible(false);
+          setActiveRoute(undefined);
+          setActiveSeat(undefined);
+          setActivePoi(undefined);
+          setActiveHeatmap(undefined);
           break;
         // Other cases can be handled here (QR scanner, Eco Vision results, etc.)
       }
@@ -83,6 +152,9 @@ export const StadiumChat: React.FC = () => {
               <StadiumMap 
                 egressRoute={activeRoute}
                 fanSeat={activeSeat}
+                targetPoi={activePoi}
+                needsAccessibility={session?.needsAccessibility}
+                heatmapData={activeHeatmap}
               />
             </div>
             
@@ -114,13 +186,13 @@ export const StadiumChat: React.FC = () => {
             messages={messages}
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
+            fanSession={session}
           />
         </div>
       </motion.div>
 
-      {/* Real-time Egress Alert Takeover */}
       <AnimatePresence>
-        {egressData && (
+        {egressData && !emergencyData && (
           <EgressAlert 
             message={egressData.message || "Please evacuate the stadium immediately."}
             gateName={egressData.target_gate_name}
@@ -131,6 +203,45 @@ export const StadiumChat: React.FC = () => {
               clearEgressAlert();
             }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Flash Sale Notification */}
+      <AnimatePresence>
+        {flashData && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[80] w-[90%] max-w-sm bg-gradient-to-br from-emerald-500 to-teal-700 text-white p-5 rounded-2xl shadow-2xl border border-emerald-400/50"
+          >
+            <button 
+              onClick={clearFlashAlert}
+              className="absolute top-3 right-3 p-1.5 bg-black/20 hover:bg-black/40 rounded-full transition-colors"
+            >
+              <XIcon size={16} />
+            </button>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-white/20 rounded-full animate-bounce">
+                <BadgePercent size={28} className="text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-xl leading-tight tracking-wide">FLASH SALE</h3>
+                <p className="text-emerald-100 text-sm font-semibold">{flashData.discount}</p>
+              </div>
+            </div>
+            <p className="text-sm mb-4 text-white/90 leading-relaxed">{flashData.message}</p>
+            <button 
+              onClick={() => {
+                clearFlashAlert();
+                sendMessage(`Route me to ${flashData.vendor_name} for the flash sale!`);
+              }}
+              className="w-full py-2.5 bg-white text-emerald-700 hover:bg-emerald-50 rounded-xl font-bold text-sm transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+            >
+              <MapIcon size={16} />
+              Route Me There
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
 

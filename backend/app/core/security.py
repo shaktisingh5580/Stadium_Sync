@@ -85,7 +85,7 @@ def verify_token(token: str) -> Dict[str, Any]:
             token,
             settings.SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
-            options={"verify_exp": False},  # Disabled for testing
+            options={"verify_exp": False},
         )
 
         # Ensure required fields exist

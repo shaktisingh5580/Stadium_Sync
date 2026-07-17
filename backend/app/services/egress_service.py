@@ -25,6 +25,7 @@ from app.models.crowd import (
 )
 from app.models.ticket import Gate, Seat, Section, Ticket
 from app.services.navigation_service import compute_egress_route
+from app.api.v1.websocket import manager
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ async def trigger_egress_agent(
 
     # Check if already triggered
     existing = await get_agent_state(db, match_id)
-    if existing and existing.status in (EgressAgentStatus.COMPUTING, EgressAgentStatus.ACTIVE):
+    if existing and existing.status in (EgressAgentStatus.COMPUTING, EgressAgentStatus.ACTIVE) and not force:
         logger.info(f"Egress agent already {existing.status.value} for match {match_id}")
         return existing
 
@@ -141,6 +142,19 @@ async def _compute_batch_routes(
             )
             db.add(egress_route)
             routes_computed += 1
+
+            # Broadcast to the fan
+            await manager.send_to_fan(
+                ticket.id,
+                {
+                    "type": "egress_route",
+                    "target_gate_id": route_data.target_gate_id,
+                    "target_gate_name": route_data.target_gate_name,
+                    "distance_meters": route_data.distance_meters,
+                    "path": [p.model_dump() for p in route_data.path],
+                    "message": "Please proceed to your assigned exit."
+                }
+            )
         except Exception as e:
             logger.warning(f"Failed to compute route for ticket {ticket.id}: {e}")
 

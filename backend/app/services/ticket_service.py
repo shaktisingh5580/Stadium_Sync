@@ -179,6 +179,7 @@ def build_fan_session(ticket: Ticket) -> FanSession:
         match_id=ticket.match_id,
         seat=seat_info,
         transit_choice=ticket.transit_choice,
+        needs_accessibility=ticket.needs_accessibility,
     )
 
 

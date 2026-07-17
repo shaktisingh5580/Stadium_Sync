@@ -21,51 +21,69 @@ _genai_clients = []
 _current_client_idx = 0
 
 
-def _get_client(client_type=None):
-    """Get the next AI client in the round-robin pool."""
+def _get_client(client_type=None, purpose=None):
+    """Get the next AI client in the round-robin pool based on purpose."""
     global _genai_clients, _current_client_idx
     
     if not _genai_clients:
-        keys = []
-        if settings.GEMINI_API_KEYS:
-            keys = [k.strip() for k in settings.GEMINI_API_KEYS.split(",") if k.strip()]
-        elif settings.GEMINI_API_KEY:
-            keys = [settings.GEMINI_API_KEY.strip()]
+        keys_gemini = []
+        if settings.GEMINI_API_KEY_1: keys_gemini.append(settings.GEMINI_API_KEY_1.strip())
+        if settings.GEMINI_API_KEY_2: keys_gemini.append(settings.GEMINI_API_KEY_2.strip())
+        if settings.GEMINI_API_KEY_3: keys_gemini.append(settings.GEMINI_API_KEY_3.strip())
+        
+        nvidia_key = settings.NVIDIA_API_KEY.strip() if settings.NVIDIA_API_KEY else None
             
-        if not keys:
+        if not keys_gemini and not nvidia_key:
             logger.warning("API keys not set — AI features will use mock responses")
             return None
             
         try:
-            for key in keys:
-                if key.startswith("nvapi-"):
-                    from openai import OpenAI
-                    _genai_clients.append({
-                        "type": "nvidia",
-                        "client": OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=key),
-                        "model": "meta/llama-3.1-70b-instruct"
-                    })
-                else:
-                    from google import genai
-                    _genai_clients.append({
-                        "type": "gemini",
-                        "client": genai.Client(api_key=key),
-                        "model": settings.GEMINI_MODEL
-                    })
-            logger.info(f"✅ Initialized {len(_genai_clients)} AI clients for round-robin rotation")
+            if nvidia_key:
+                from openai import OpenAI
+                _genai_clients.append({
+                    "type": "nvidia",
+                    "client": OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=nvidia_key),
+                    "model": "meta/llama-3.1-70b-instruct"
+                })
+                
+            for key in keys_gemini:
+                from google import genai
+                _genai_clients.append({
+                    "type": "gemini",
+                    "client": genai.Client(api_key=key),
+                    "model": settings.GEMINI_MODEL
+                })
+            logger.info(f"✅ Initialized {len(_genai_clients)} AI clients for purpose-based rotation")
         except Exception as e:
             logger.error(f"Failed to initialize AI clients: {e}")
             return None
             
     available = _genai_clients
+    
     if client_type:
-        available = [c for c in _genai_clients if c.get("type") == client_type]
+        available = [c for c in available if c.get("type") == client_type]
         
+    if purpose == "eco_vision":
+        # Images MUST go to Gemini
+        available = [c for c in available if c.get("type") == "gemini"]
+    elif purpose in ("admin_chat", "fan_chat"):
+        # Rotate across all available Gemini keys for Chat
+        gemini_clients = [c for c in available if c.get("type") == "gemini"]
+        if gemini_clients:
+            available = gemini_clients
+    elif purpose == "triage":
+        # Prefer NVIDIA, else round robin
+        nvidia_clients = [c for c in available if c.get("type") == "nvidia"]
+        if nvidia_clients:
+            return nvidia_clients[0]
+            
     if not available:
-        return None
-        
+        available = _genai_clients
+        if not available:
+            return None
+            
     client_info = available[_current_client_idx % len(available)]
-    _current_client_idx = (_current_client_idx + 1) % len(_genai_clients)
+    _current_client_idx = (_current_client_idx + 1) % len(available)
     
     return client_info
 
@@ -105,7 +123,7 @@ async def classify_waste_image(image_base64: str, mime_type: str = "image/jpeg")
     Returns:
         Dict with classification result.
     """
-    client_info = _get_client(client_type="gemini")
+    client_info = _get_client(purpose="eco_vision")
 
     if client_info is None:
         # Mock response when no Gemini API key
@@ -114,6 +132,8 @@ async def classify_waste_image(image_base64: str, mime_type: str = "image/jpeg")
     client = client_info["client"]
 
     try:
+        if image_base64.startswith("data:image"):
+            image_base64 = image_base64.split("base64,")[1]
         image_bytes = base64.b64decode(image_base64)
 
         from google.genai import types
@@ -131,17 +151,40 @@ async def classify_waste_image(image_base64: str, mime_type: str = "image/jpeg")
             ),
         )
 
-        import json
-        # Extract JSON from response
-        text = response.text.strip()
-        # Handle markdown code blocks
-        if text.startswith("```"):
-            text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        return json.loads(text)
+        text = response.text.strip() if response.text else "{}"
+        try:
+            return _parse_json_response(text)
+        except Exception as je:
+            logger.error(f"Gemini eco-vision JSON error: {je}")
+            return _mock_eco_response()
 
     except Exception as e:
         logger.error(f"Gemini eco-vision error: {e}")
         return _mock_eco_response()
+
+def _parse_json_response(text: str) -> dict:
+    import json
+    import ast
+    text = text.strip()
+    if text.startswith("```"):
+        parts = text.split("\n", 1)
+        if len(parts) > 1:
+            text = parts[1]
+        if "```" in text:
+            text = text.rsplit("```", 1)[0]
+    text = text.strip()
+    
+    if not text:
+        return {}
+        
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        try:
+            clean_text = text.replace("true", "True").replace("false", "False").replace("null", "None")
+            return ast.literal_eval(clean_text)
+        except Exception:
+            raise ValueError(f"Raw text: {text}")
 
 
 def _mock_eco_response() -> dict:
@@ -199,7 +242,7 @@ async def triage_incident(
     Returns:
         Dict with triage result.
     """
-    client_info = _get_client()
+    client_info = _get_client(purpose="triage")
 
     if client_info is None:
         return _mock_triage_response(description)
@@ -298,11 +341,12 @@ Available ui_action values and when to use them:
 - "NONE" — General conversation, greetings, information, tips. No visual action needed.
 - "SHOW_MAP" — When the user asks about a LOCATION (washroom, food court, gate, medical station, their seat). Set payload.target to the location type: "washroom", "food_court", "gate_north", "gate_south", "gate_east", "gate_west", "medical", "seat".
 - "SHOW_ROUTE" — When the user wants DIRECTIONS or NAVIGATION to a specific place. Set payload.target to the location (e.g., "gate_north", "gate_south", "gate_east", "gate_west", "washroom", "food_court"). If the user asks for a route between their seat and a specific gate, set payload.target to that specific gate (NOT "seat").
-- "REQUEST_IMAGE" — When the user has generic waste/trash but hasn't specified what it is. Ask them to upload a photo or describe the item.
-- "SHOW_ECO_RESULT" — When the user explicitly names the waste item (e.g., "plastic cup", "banana peel", "food") OR when an image is processed. In your message, tell them exactly which bin to use (Green for Compost, Blue for Recycle, Black for Landfill, Red for Hazardous).
+- "REQUEST_IMAGE" — When the user asks where to throw trash but DOES NOT say what the item is. Ask them "Can you tell me what the item is (e.g. plastic, paper) or upload an image?". NEVER ask for an image if they already named the item!
+- "SHOW_ECO_RESULT" — When the user explicitly names the waste item (e.g., "paper", "plastic cup", "banana peel", "can") OR when an image is processed. In your message, tell them exactly which bin to use (Green for Compost, Blue for Recycle, Black for Landfill, Red for Hazardous).
 - "DISPATCH_INCIDENT" — When the user REPORTS A PROBLEM: spill, broken seat, fight, medical emergency, suspicious activity. Extract the description.
   Set payload.description to a clear summary of the issue.
 - "SHOW_CROWD" — When the user asks about crowd levels, density, or how busy sections are.
+- "CLEAR_MAP" — When the user asks to remove routes, marks, or pins from the map, but keep the map open.
 - "HIDE_MAP" — When the map is no longer needed (user says thanks, done, close, etc.)
 
 Context about the current fan:
@@ -310,6 +354,7 @@ Context about the current fan:
 - Seat: Section {section}, Row {row}, Seat {seat_number}
 - Match: {match_id}
 - Transit preference: {transit_method}
+- Needs Accessibility: {needs_accessibility}
 
 IMPORTANT RULES:
 1. Be warm, concise, and helpful. Use emojis sparingly.
@@ -337,7 +382,10 @@ async def agentic_chat(
     Returns:
         Dict with 'message', 'ui_action', and 'payload'.
     """
-    client_info = _get_client()
+    if image_base64:
+        client_info = _get_client(purpose="eco_vision")
+    else:
+        client_info = _get_client(purpose="fan_chat")
     fan_context = fan_context or {}
 
     if client_info is None:
@@ -352,6 +400,7 @@ async def agentic_chat(
             seat_number=fan_context.get("seat_number", "Unknown"),
             match_id=fan_context.get("match_id", "Unknown"),
             transit_method=fan_context.get("transit_method", "not set"),
+            needs_accessibility="Yes" if fan_context.get("needs_accessibility") else "No",
         )
 
         import json
@@ -392,6 +441,8 @@ async def agentic_chat(
             # Add image if provided
             if image_base64:
                 import base64 as b64
+                if image_base64.startswith("data:image"):
+                    image_base64 = image_base64.split("base64,")[1]
                 image_bytes = b64.b64decode(image_base64)
                 parts.append(types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"))
     
@@ -401,11 +452,14 @@ async def agentic_chat(
                 config=types.GenerateContentConfig(
                     temperature=0.3,
                     max_output_tokens=500,
-                    response_mime_type="application/json",
                 ),
             )
-            text = response.text.strip()
-        result = json.loads(text)
+            text = response.text.strip() if response.text else "{}"
+        try:
+            result = _parse_json_response(text)
+        except Exception as je:
+            logger.error(f"Gemini agentic JSON error: {je}. Raw text: {text}")
+            return _mock_agentic_response(message, image_base64)
 
         # Validate required fields
         if "message" not in result:
@@ -530,4 +584,80 @@ def _mock_agentic_response(message: str, image_base64: str = None) -> dict:
         "ui_action": "NONE",
         "payload": {},
     }
+
+
+# ── Admin Copilot ──
+
+ADMIN_SYSTEM_PROMPT = """You are "Stadium AI", the operational copilot for the FIFA World Cup 2026 stadium organizers.
+
+You help stadium admins monitor the digital twin of the stadium. You have access to live state data.
+When the organizer asks a question, use the following stadium state to provide actionable operational insights.
+
+Stadium State:
+{stadium_state}
+
+IMPORTANT RULES:
+1. Be concise, professional, and highlight risks.
+2. If crowd density is high, suggest opening overflow gates or dispatching volunteers.
+3. Keep answers under 3 paragraphs.
+"""
+
+async def admin_chat(message: str, stadium_state: dict, history: list = None) -> dict:
+    """Chat with the admin copilot."""
+    client_info = _get_client(purpose="admin_chat")
+    
+    if not client_info:
+        return {"message": "Admin AI is in offline mock mode. The stadium looks operational, but AI predictions are disabled."}
+
+    try:
+        import json
+        # remove datetime objects for json dump
+        def default_serializer(obj):
+            from datetime import datetime
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            return str(obj)
+
+        state_str = json.dumps(stadium_state, indent=2, default=default_serializer)
+        system_prompt = ADMIN_SYSTEM_PROMPT.format(stadium_state=state_str)
+        
+        if client_info["type"] == "nvidia":
+            client = client_info["client"]
+            messages = [{"role": "system", "content": system_prompt}]
+            if history:
+                for msg in history[-5:]:
+                    role = "user" if msg.get("role") == "user" else "assistant"
+                    messages.append({"role": role, "content": msg.get("content", "")})
+            messages.append({"role": "user", "content": message})
+            
+            response = client.chat.completions.create(
+                model=client_info["model"],
+                messages=messages,
+                temperature=0.2,
+                max_tokens=500
+            )
+            return {"message": response.choices[0].message.content.strip()}
+        else:
+            client = client_info["client"]
+            contents = [system_prompt]
+            if history:
+                for msg in history[-5:]:
+                    prefix = "User: " if msg.get("role") == "user" else "Assistant: "
+                    contents.append(prefix + msg.get("content", ""))
+            contents.append(f"User: {message}")
+            
+            from google.genai import types
+            response = client.models.generate_content(
+                model=client_info["model"],
+                contents=[types.Part.from_text(text="\n\n".join(contents))],
+                config=types.GenerateContentConfig(
+                    temperature=0.2,
+                    max_output_tokens=500,
+                ),
+            )
+            return {"message": response.text.strip()}
+            
+    except Exception as e:
+        logger.error(f"Gemini admin chat error: {e}")
+        return {"message": f"Error communicating with AI Copilot: {str(e)}"}
 

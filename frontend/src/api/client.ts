@@ -18,3 +18,16 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Interceptor to handle expired tokens
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      console.warn("Token expired or unauthorized. Clearing session.");
+      localStorage.removeItem('stadium_sync_token');
+      window.location.reload();
+    }
+    return Promise.reject(error);
+  }
+);

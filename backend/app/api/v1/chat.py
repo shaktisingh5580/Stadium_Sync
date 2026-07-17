@@ -119,32 +119,73 @@ async def chat(
             )
             payload["incident_id"] = incident.id
             payload["severity"] = incident.severity.value
-            payload["category"] = incident.category
-            payload["status"] = incident.status.value
-            payload["estimated_response_mins"] = incident.estimated_response_mins
+            ai_response["payload"]["incident_id"] = incident.id
+            ai_response["payload"]["severity"] = incident.severity.value
+            ai_response["payload"]["category"] = incident.category
+            ai_response["payload"]["status"] = incident.status.value
+            ai_response["payload"]["estimated_response_mins"] = incident.estimated_response_mins
             logger.info(f"Chat-dispatched incident {incident.id} for ticket {ticket_id}")
         except Exception as e:
             logger.error(f"Failed to create incident from chat: {e}")
             # Still return the AI message, just without the DB-backed data
 
-    # If show map for seat, inject the seat coordinates
-    if ui_action == "SHOW_MAP" and payload.get("target") == "seat":
+    # Prepare initial payload struct
+    payload = ai_response.get("payload")
+    if not isinstance(payload, dict):
+        payload = {}
+    ai_response["payload"] = payload
+
+    if ui_action == "SHOW_CROWD":
         try:
-            from app.models.ticket import Ticket
-            from sqlalchemy.orm import joinedload
-            from sqlalchemy import select
+            from app.models.ticket import Ticket, Seat, Section
+            from app.services.crowd_service import get_stadium_crowd_map
             
-            stmt = select(Ticket).options(joinedload(Ticket.seat)).where(Ticket.id == ticket_id)
-            result = await db.execute(stmt)
-            ticket = result.unique().scalar_one_or_none()
-            
-            if ticket and ticket.seat:
-                payload["seat_coordinates"] = {"x": ticket.seat.svg_x, "y": ticket.seat.svg_y}
-            else:
-                payload["seat_coordinates"] = {"x": 275.0, "y": 132.0}
+            ticket_obj = await db.get(Ticket, ticket_id)
+            if ticket_obj:
+                seat_obj = await db.get(Seat, ticket_obj.seat_id)
+                section_obj = await db.get(Section, seat_obj.section_id) if seat_obj else None
+                stadium_id = section_obj.stadium_id if section_obj else "stadium-metlife-001"
+                
+                crowd_map = await get_stadium_crowd_map(db, stadium_id)
+                heatmap_data = {s.section_id: s.density_pct for s in crowd_map.sections}
+                payload["heatmapData"] = heatmap_data
         except Exception as e:
-            logger.error(f"Failed to fetch seat coordinates for SHOW_MAP: {e}")
-            payload["seat_coordinates"] = {"x": 275.0, "y": 132.0}
+            logger.error(f"Failed to fetch crowd density: {e}")
+
+    # If show map, inject the POI or seat coordinates
+    if ui_action == "SHOW_MAP":
+        target = payload.get("target")
+        if target == "seat":
+            try:
+                from app.models.ticket import Ticket
+                from sqlalchemy.orm import joinedload
+                from sqlalchemy import select
+                
+                stmt = select(Ticket).options(joinedload(Ticket.seat)).where(Ticket.id == ticket_id)
+                result = await db.execute(stmt)
+                ticket = result.unique().scalar_one_or_none()
+                
+                if ticket and ticket.seat:
+                    payload["poi"] = {"type": "seat", "name": "Your Seat", "x": ticket.seat.svg_x, "y": ticket.seat.svg_y}
+                else:
+                    payload["poi"] = {"type": "seat", "name": "Your Seat", "x": 275.0, "y": 132.0}
+            except Exception as e:
+                logger.error(f"Failed to fetch seat coordinates for SHOW_MAP: {e}")
+                payload["poi"] = {"type": "seat", "name": "Your Seat", "x": 275.0, "y": 132.0}
+        elif target == "washroom":
+            payload["poi"] = {"type": "washroom", "name": "Nearest Washroom", "x": 550.0, "y": 250.0}
+        elif target == "food_court":
+            payload["poi"] = {"type": "food_court", "name": "Nearest Food Court", "x": 250.0, "y": 250.0}
+        elif target == "medical":
+            payload["poi"] = {"type": "medical", "name": "Medical Station", "x": 600.0, "y": 400.0}
+        elif target == "gate_north":
+            payload["poi"] = {"type": "gate", "name": "North Gate", "x": 400.0, "y": 100.0}
+        elif target == "gate_south":
+            payload["poi"] = {"type": "gate", "name": "South Gate", "x": 400.0, "y": 700.0}
+        elif target == "gate_east":
+            payload["poi"] = {"type": "gate", "name": "East Gate", "x": 700.0, "y": 400.0}
+        elif target == "gate_west":
+            payload["poi"] = {"type": "gate", "name": "West Gate", "x": 100.0, "y": 400.0}
 
     # If show route → compute the actual SVG route
     if ui_action == "SHOW_ROUTE":
@@ -170,6 +211,13 @@ async def chat(
                 "estimated_time_mins": route.estimated_time_mins,
                 "path": [{"x": p.x, "y": p.y} for p in route.path],
             }
+            if target and target != "seat":
+                payload["poi"] = {
+                    "type": target if not target.startswith("gate_") else "gate",
+                    "name": route.target_gate_name,
+                    "x": route.path[-1].x,
+                    "y": route.path[-1].y
+                }
             logger.info(f"Chat computed route for ticket {ticket_id}")
         except Exception as e:
             logger.error(f"Failed to compute route from chat: {e}")

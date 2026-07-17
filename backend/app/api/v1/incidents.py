@@ -212,3 +212,54 @@ async def manual_dispatch(
             "message": "No available volunteers at this time",
             "request_id": getattr(request.state, "request_id", ""),
         }
+
+
+# ──────────────────────────────────────────────
+# POST /incidents/{incident_id}/resolve
+# ──────────────────────────────────────────────
+
+@router.post(
+    "/{incident_id}/resolve",
+    response_model=None,
+    summary="Resolve incident",
+    description="Resolves the incident, frees the assigned volunteer, and notifies the fan.",
+)
+@limiter.limit(settings.RATE_LIMIT_DEFAULT)
+async def resolve_incident_endpoint(
+    request: Request,
+    incident_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Resolve an incident and free the assigned volunteer."""
+    from app.models.incident import IncidentStatus
+    from app.models.volunteer import Volunteer, VolunteerStatus
+    from sqlalchemy import select
+    from app.api.v1.websocket import manager
+    
+    incident = await get_incident(db, incident_id)
+    if incident.status == IncidentStatus.RESOLVED:
+        return {"success": True, "message": "Already resolved"}
+        
+    incident.status = IncidentStatus.RESOLVED
+    
+    if incident.assigned_volunteer_id:
+        vol_stmt = select(Volunteer).where(Volunteer.id == incident.assigned_volunteer_id)
+        vol = (await db.execute(vol_stmt)).scalar_one_or_none()
+        if vol:
+            vol.status = VolunteerStatus.AVAILABLE
+            db.add(vol)
+            
+    db.add(incident)
+    await db.commit()
+    
+    # Notify fan
+    await manager.send_to_fan(
+        incident.ticket_id, 
+        {
+            "type": "chat_message", 
+            "role": "system", 
+            "content": "Your reported issue has been completely resolved and all set. Thank you!"
+        }
+    )
+    
+    return {"success": True, "message": "Incident resolved successfully"}

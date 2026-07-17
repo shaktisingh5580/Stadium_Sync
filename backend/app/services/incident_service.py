@@ -16,6 +16,7 @@ from app.core.exceptions import NotFoundException, ForbiddenException
 from app.models.incident import Incident, IncidentStatus, IncidentUpdate, Severity
 from app.models.ticket import Seat, Section
 from app.services.gemini_client import triage_incident
+from app.api.v1.websocket import manager
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,17 @@ async def create_incident(
         estimated_response_mins=triage.get("estimated_response_mins", 10),
     )
 
+    # Automatically dispatch an available volunteer
+    from app.models.volunteer import Volunteer, VolunteerStatus
+    vol_stmt = select(Volunteer).where(Volunteer.status == VolunteerStatus.AVAILABLE).limit(1)
+    vol_res = await db.execute(vol_stmt)
+    volunteer = vol_res.scalar_one_or_none()
+
+    if volunteer:
+        incident.assigned_volunteer_id = volunteer.id
+        incident.status = IncidentStatus.ASSIGNED
+        volunteer.status = VolunteerStatus.BUSY
+
     db.add(incident)
     await db.flush()
 
@@ -72,6 +84,8 @@ async def create_incident(
         f"Incident created: id={incident.id}, severity={severity.value}, "
         f"category={triage.get('category')}, section={section_name}"
     )
+
+    await manager.broadcast_to_admins({"type": "admin_refresh_required"})
 
     return incident
 
@@ -157,5 +171,7 @@ async def update_incident_status(
     await db.flush()
 
     logger.info(f"Incident {incident_id} updated to {new_status} by {updated_by}")
+
+    await manager.broadcast_to_admins({"type": "admin_refresh_required"})
 
     return update

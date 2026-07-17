@@ -9,15 +9,42 @@ interface EgressData {
   message: string;
 }
 
+interface EmergencyData {
+  type: 'emergency_evacuate';
+  hazard_zone?: string;
+  message: string;
+}
+
+interface FlashData {
+  type: 'flash_sale';
+  vendor_name: string;
+  section_id: string;
+  discount: string;
+  message: string;
+  duration_mins: number;
+}
+
+interface ChatData {
+  type: 'chat_message';
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
 interface RealtimeState {
   isConnected: boolean;
   egressData: EgressData | null;
+  emergencyData: EmergencyData | null;
+  flashData: FlashData | null;
+  chatData: ChatData | null;
 }
 
 export function useRealtime() {
   const [state, setState] = useState<RealtimeState>({
     isConnected: false,
     egressData: null,
+    emergencyData: null,
+    flashData: null,
+    chatData: null,
   });
   
   const wsRef = useRef<WebSocket | null>(null);
@@ -27,7 +54,7 @@ export function useRealtime() {
     if (!token) return;
 
     // Use localhost:8000 since we're in dev, or relative wss in prod
-    const wsUrl = `ws://localhost:8000/api/v1/realtime/ws?token=${token}`;
+    const wsUrl = `ws://localhost:8000/api/v1/ws?token=${token}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -51,6 +78,21 @@ export function useRealtime() {
           setState(prev => ({
             ...prev,
             egressData: data
+          }));
+        } else if (data.type === 'emergency_evacuate') {
+          setState(prev => ({
+            ...prev,
+            emergencyData: data
+          }));
+        } else if (data.type === 'flash_sale') {
+          setState(prev => ({
+            ...prev,
+            flashData: data
+          }));
+        } else if (data.type === 'chat_message') {
+          setState(prev => ({
+            ...prev,
+            chatData: data
           }));
         }
         
@@ -88,8 +130,23 @@ export function useRealtime() {
     setState(prev => ({ ...prev, egressData: null }));
   }, []);
 
+  const clearFlashAlert = useCallback(() => {
+    setState(prev => ({ ...prev, flashData: null }));
+  }, []);
+
+  const clearChatAlert = useCallback(() => {
+    setState(prev => ({ ...prev, chatData: null }));
+  }, []);
+
+  const clearEmergencyAlert = useCallback(() => {
+    setState(prev => ({ ...prev, emergencyData: null }));
+  }, []);
+
   return {
     ...state,
-    clearEgressAlert
+    clearEgressAlert,
+    clearFlashAlert,
+    clearChatAlert,
+    clearEmergencyAlert
   };
 }

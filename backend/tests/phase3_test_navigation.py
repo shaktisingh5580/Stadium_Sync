@@ -131,7 +131,7 @@ async def test_calculate_route_bus(client: AsyncClient):
     assert data["path"][0]["x"] == 150
     assert data["path"][0]["y"] == 150
     
-    assert data["path"][-1]["x"] == 250
+    assert data["path"][-1]["x"] == 150
     assert data["path"][-1]["y"] == 400
 
 

@@ -32,6 +32,10 @@ class CrowdDensityResponse(BaseModel):
     density_pct: float
     density_level: str  # low, moderate, high, critical
     timestamp: datetime
+    predicted_mins_to_85: Optional[int] = None
+    trend: Optional[str] = None
+    sentiment_score: Optional[float] = None
+    acoustic_status: Optional[str] = None
 
 
 class StadiumCrowdMap(BaseModel):
