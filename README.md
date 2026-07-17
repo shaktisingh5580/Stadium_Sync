@@ -1,248 +1,331 @@
-# 🏟️ Stadium Sync
-### *The AI Operating System for the FIFA World Cup 2026*
+# 🏟️ STADIUM SYNC: THE AI OPERATING SYSTEM FOR FIFA WORLD CUP 2026
 
-> **Stadium Sync is not a chatbot. It is the brain of the stadium.**  
+![Stadium Sync Hero](https://via.placeholder.com/1200x400/0f172a/3b82f6?text=STADIUM+SYNC+-+AI+OPERATING+SYSTEM)
+
+> **"Stadium Sync is not a chatbot. It is the centralized nervous system of the stadium."**
+> 
 > It continuously understands every fan, volunteer, sensor, gate, and incident — predicts problems before they happen — and autonomously coordinates 80,000 people toward a safer, smarter, and greener match-day experience.
 
 ---
 
-## The Problem With Stadiums Today
+## 📑 TABLE OF CONTENTS
 
-Stadium operations still run like it's 1998.
-
-- A fan gets lost. Nobody knows.  
-- A spill happens. Staff find out in 8 minutes.  
-- A gate reaches 95% capacity. No one reroutes the crowd until there's a crush.  
-- 80,000 people try to leave at once. Everyone exits through the same gates.  
-- A plastic bottle goes in the wrong bin. Nobody notices.
-
-**These aren't small annoyances. They are safety failures, sustainability failures, and experience failures — happening simultaneously, at scale, in 60-second windows.**
-
-Stadium Sync solves all of them. Together. With one AI.
-
----
-
-## One AI. Everything Connected.
-
-Every module in Stadium Sync shares context with every other module. The AI doesn't answer questions in isolation — it **understands the stadium as a living system** and acts on that understanding.
-
-```
-                    ┌─────────────────────────────┐
-                    │      STADIUM SYNC AI BRAIN   │
-                    │                             │
-  Fan message ────► │  Knows crowd density        │
-  Sensor data ────► │  Knows your seat & transit  │
-  Incident ──────► │  Knows volunteer positions  │
-  IoT gate data ──► │  Knows gate congestion      │
-  Image upload ──►  │  Knows eco-bin locations    │
-                    │                             │
-                    │  → Decides what to do       │
-                    │  → Coordinates the response │
-                    │  → Pushes to every device   │
-                    └─────────────────────────────┘
-```
-
-When a fan asks *"Where should I get food?"* — Stadium Sync already knows:
-- How crowded each concession stand is (from IoT sensors)
-- Whether the fan uses a wheelchair (from their ticket profile)
-- That halftime started 3 minutes ago (surge incoming)
-- That a spill was just reported near Stall 12 (from incident system)
-- That their exit gate is Gate East (from their transit preference)
-
-The response isn't *"Food is at Section 106."*  
-It's *"Head to Stall 18 — 2-minute wait, wheelchair accessible, on your way to Gate East. Avoid Stall 12, there's a clean-up in progress."*
-
-**That is intelligence. Not a chatbot.**
+1. [Executive Summary](#-executive-summary)
+2. [The Problem with Legacy Stadiums](#-the-problem-with-legacy-stadiums)
+3. [Core Features & Capabilities](#-core-features--capabilities)
+4. [For the Judges: The Ultimate Demo Guide](#-for-the-judges-the-ultimate-demo-guide)
+5. [The Fan Journey: A Walkthrough](#-the-fan-journey-a-walkthrough)
+6. [Generative AI Integration](#-generative-ai-integration)
+7. [Technical Architecture & System Design](#-technical-architecture--system-design)
+8. [Project Structure](#-project-structure)
+9. [Local Development Setup](#-local-development-setup)
+10. [Database Schema & ERD](#-database-schema--erd)
+11. [API Reference Documentation](#-api-reference-documentation)
+12. [Real-Time WebSocket Protocol](#-real-time-websocket-protocol)
+13. [Security & Authentication](#-security--authentication)
+14. [Future Roadmap](#-future-roadmap)
 
 ---
 
-## Projected Impact
+## 🚀 EXECUTIVE SUMMARY
 
-| Metric | Improvement |
-|---|---|
-| Average fan navigation time | **↓ 50%** |
-| Emergency response dispatch time | **↓ 78%** (5 min → 65 sec) |
-| Exit congestion at match end | **↓ 35%** via pre-computed egress routing |
-| Waste sorted correctly | **↑ 70%** via real-time AI classification |
-| Volunteer idle time | **↓ 60%** via intelligent proximity dispatch |
-| Language barriers eliminated | **100+ languages** supported natively |
-| Concurrent fan capacity | **80,000 simultaneous connections** via WebSocket |
-| LLM API cost for navigation | **$0** (static intercepts bypass LLM entirely) |
+Stadium operations currently run in silos. Security doesn't talk to concessions; ticketing doesn't talk to crowd control. When 80,000 fans attend a FIFA World Cup match, these silos create dangerous bottlenecks, delayed emergency responses, and a frustrating fan experience.
 
-*Projections based on system architecture benchmarks and comparative studies of smart stadium deployments.*
+**Stadium Sync** unifies all stadium operations into a single AI-driven platform. 
+By utilizing **Google Gemini** for multimodal reasoning and **Nvidia NIM (Llama 3.1)** for lightning-fast NLP, the platform ingests data from fans (chat), staff (dashboards), and sensors (mocked IoT) to make instantaneous, global decisions.
 
 ---
 
-## The Fan Journey
+## 🚨 THE PROBLEM WITH LEGACY STADIUMS
 
-A fan arrives at MetLife Stadium, New Jersey. This is their entire match-day experience with Stadium Sync.
+Stadiums today face three critical failures during mega-events like the World Cup:
+1. **The Navigation Failure:** Fans get lost. Wayfinding signs are static and ignore live congestion.
+2. **The Response Failure:** A medical emergency takes 8 minutes to reach dispatch because of hierarchical radio communication.
+3. **The Egress Failure:** 80,000 people try to leave through the same 4 gates, creating crowd crushes.
 
-**7:15 PM — Arrival**  
-They scan their digital QR ticket at the gate. In 180ms, Stadium Sync validates the cryptographic checksum, confirms their seat in the database, and issues a secure session that knows their name, seat, section, and how they're getting home.
-
-**7:23 PM — Finding the Seat**  
-They type *"/seat"*. No LLM is called. No API cost. The backend intercepts the command, fetches their exact SVG seat coordinates from PostgreSQL, and draws a smooth curved arc from the entrance to their seat — routing them along the outer concourse, avoiding the field entirely. They walk directly there.
-
-**8:10 PM — The Spill**  
-The fan notices a large spill in their row. They type *"large spill, row 7, aisle blocked."* Gemini reads the message, classifies severity as `HIGH`, writes a structured incident to the database, and within 4 seconds the nearest available volunteer receives an assignment with their name, the exact section, and the nature of the incident. Expected response: 3 minutes. The fan gets a confirmation with an incident ID.
-
-**Half-Time — The Waste**  
-The fan has a plastic cup and a banana peel. They photograph both. Gemini Vision identifies: plastic → Blue Recycle bin, banana → Green Compost bin. The map opens showing two curved routes — one to the recycling point, one to the compost point, both on their path to the concession stand.
-
-**90th Minute — The Exit**  
-Stadium Sync's egress agent detects Gate West is at 88% density. Without anyone asking, it pre-computes personalized exit routes for all 80,000 fans based on live congestion data. As the final whistle blows, every fan's phone receives a push notification via WebSocket. The screen flashes: *"Your safest exit is Gate North. Leave now — estimated 6 minutes. Your bus departs in 18 minutes."* Congestion at the stadium drops measurably within 4 minutes.
+**Stadium Sync solves all of them simultaneously.**
 
 ---
 
-## Why Generative AI Is Non-Negotiable
+## 🌟 CORE FEATURES & CAPABILITIES
 
-Remove Gemini and the stadium becomes a broken system:
+### 1. Agentic Fan Concierge (Generative AI)
+- **Contextual Memory:** The AI is instantiated with state. It knows who you are, where you are sitting (e.g., Section N101, Row 1, Seat 1), and how you plan to leave the stadium.
+- **Dynamic UI Rendering:** The chat is not just text. The AI leverages "UI Actions" to command the React frontend to render maps, image uploaders, or specific alert components based on the fan's intent.
 
-| Without AI | What breaks |
-|---|---|
-| No intent understanding | Fan says "I feel sick" — system does nothing. With AI: medical station route + volunteer dispatched immediately |
-| No triage | All incidents get the same response time. With AI: a fire is treated like a spill until a human reviews it |
-| No image understanding | Fan photographs a soup container. Without vision AI, impossible to classify. With AI: instant, accurate, bin-specific |
-| No context-aware routing | Navigation sends everyone to the closest gate. With AI: it knows your bus leaves in 12 minutes and routes accordingly |
-| No conversational understanding | Slang, typos, indirect questions. Without AI: null response. With AI: understood and answered |
-| No language flexibility | A Japanese fan types in Japanese. Without AI: no response. With AI: answer delivered in Japanese |
+### 2. Eco-Vision Waste Sorting (Multimodal AI)
+- Fans can upload photos of their trash (e.g., a plastic bottle, a hot dog wrapper). 
+- The AI instantly classifies the material (Compost, Recycle, Landfill) using **Gemini's Multimodal Vision capabilities** and routes the fan to the nearest correct bin using the SVG spatial map.
 
-**Generative AI is not decorating Stadium Sync. It is what makes Stadium Sync possible.**
+### 3. Automated Incident Triage & Dispatch
+- Natural language reports from fans are parsed by **Llama 3.1** via Nvidia NIM.
+- The AI autonomously determines the category (medical, security, maintenance) and severity (low, medium, high, critical).
+- It writes the incident to the database and broadcasts it via WebSocket to the Admin Dashboard in milliseconds.
 
----
+### 4. Real-Time Command Center (Admin Dashboard)
+- A powerful React dashboard heavily utilizing WebSockets for real-time reactivity.
+- Visualizes live stadium occupancy, predictive congestion alerts (e.g., "Section E2 will hit 85% capacity in 12 mins"), and active incidents.
 
-## How It Works (For Those Who Want to Know)
-
-Stadium Sync is built in two layers: a **FastAPI backend** (Python 3.12) and a **React 19 frontend** — connected by REST APIs and a persistent WebSocket channel. The AI is Google Gemini 2.0 Flash, with NVIDIA Llama 3.1 70B as a parallel provider for rate-limit resilience.
-
-### The AI Pipeline
-Every fan message flows through a single `POST /chat` endpoint that orchestrates all features:
-1. **Static intercept check** — if it's a known command, respond in 0ms without touching the LLM
-2. **LLM call with full context** — fan's name, seat, section, transit, and match injected into every prompt
-3. **Structured JSON action** — AI returns `{message, ui_action, payload}` telling the frontend exactly what to render
-4. **Side-effect execution** — route computed in Python math engine, incident written to DB, volunteer dispatched — all in the same request before responding
-
-### The AI Client Pool
-Production rate limits don't exist for Stadium Sync. API keys from both Gemini and NVIDIA are pooled and served round-robin:
-```
-GEMINI_API_KEYS=gemini-key-1,gemini-key-2,gemini-key-3,nvapi-nvidia-key-1
-```
-Vision calls are pinned to Gemini (Llama 3.1 is text-only). Text calls rotate across all keys. At peak load with 5 keys, effective rate limit is 5x any individual key.
-
-### The Navigation Engine
-No LLM draws routes. A Python polar-coordinate arc generator computes a physically realistic path:
-- Step the fan radially outward from their seat to the outer concourse
-- Arc along the concourse perimeter (12–15 waypoints) toward the target gate's angular position
-- Step inward to the gate
-- Convert SVG units to meters (1 SVG unit ≈ 1.5m), estimate walking speed at 80m/min in a crowd
-
-This means routes are **instantaneous, deterministic, and always correct** — no hallucinations possible.
-
-### The Real-Time Layer
-A FastAPI WebSocket hub (`/api/v1/realtime/ws`) maintains authenticated connections to every active fan device. When the egress agent fires:
-1. Computes personalized routes for all tickets in one batch
-2. Pushes `egress_route` event to every WebSocket connection simultaneously
-3. Frontend receives it, flashes the alert, and draws the route — all within ~200ms of server trigger
+### 5. Predictive Egress Routing
+- Instead of everyone rushing the same gate, the system predicts congestion.
+- The Admin can trigger "Egress" which pushes personalized, safe exit routes to every fan's phone simultaneously at the end of the match, balancing load across all physical gates.
 
 ---
 
-## The Modules (All Wired Together)
+## 👨‍⚖️ FOR THE JUDGES: THE ULTIMATE DEMO GUIDE
 
-| Module | What the AI Decides |
-|---|---|
-| **🎟️ Ticket Auth** | Is this ticket valid? What does this fan need access to? |
-| **🗺️ Navigation** | Which gate matches this fan's transit and the live crowd situation? |
-| **♻️ Eco-Vision** | What is this object? Which bin? Where is the nearest one? |
-| **🚨 Incidents** | How serious is this? Which volunteer is closest? Who should be notified? |
-| **🌊 Egress** | Which fans should exit which gate to minimize total congestion? |
-| **📡 Crowd Intel** | Where is density rising? Which sections need attention? |
-| **🤝 Volunteers** | Who is idle? Who is overloaded? What is their fastest path? |
+To fully experience the real-time, asynchronous capabilities of Stadium Sync, you **MUST** test the platform using **two separate browser windows side-by-side**. 
+
+### 🖥️ Window Setup
+1. **Window 1 (The Fan):** Open `https://stadium-sync-ea8o.vercel.app/`
+2. **Window 2 (The Admin):** Open `https://stadium-sync-ea8o.vercel.app/?admin=true`
+
+### 🧪 Step 1: Authentication (Fan Window)
+- Click the **"Scan Ticket"** button.
+- *Behind the scenes:* The backend validates a cryptographic checksum, fetches the fan's specific seat, and issues a JWT token. The fan is placed into the Chat interface.
+
+### 🧪 Step 2: Spatial Awareness (Fan Window)
+- Type: `/seat` or *"Where is my seat?"*
+- *What happens:* The AI triggers a `SHOW_MAP` UI action. The interactive SVG stadium map renders a dynamic path from the entrance directly to the user's specific section.
+
+### 🧪 Step 3: Eco-Vision Demo (Fan Window)
+- Type: `/eco` or *"I have some trash, where do I put it?"*
+- *What happens:* The AI requests an image upload. Upload an image of a plastic bottle. The Gemini Vision model will analyze the pixels, classify it as "Recycle", and guide you to the Blue bin.
+
+### 🧪 Step 4: Real-Time Incident Reporting (Fan Window -> Admin Window)
+- In the Fan Window, type: *"There is a huge spill of beer on the stairs in my section, someone might slip."*
+- *What happens (Admin Window):* Look at your Admin Dashboard. Without refreshing the page, the incident instantly appears in the **Live Incidents** feed via WebSocket broadcast, complete with AI triage (High Severity).
+
+### 🧪 Step 5: Closed-Loop AI Confirmation (Admin Window -> Fan Window)
+- In the Admin Dashboard, locate the spill incident you just created.
+- Click the **"Mark Resolved"** button.
+- *What happens:* The backend updates the database. It then looks up the specific WebSocket connection of the fan who reported it.
+- *Look at the Fan Window:* The fan instantly receives a chat message: *"✅ Update on your report: The incident has been marked as RESOLVED."* 
+
+### 🧪 Step 6: Global Egress & Mass Coordination (Admin Window -> Fan Window)
+- In the Admin Dashboard, click the **"EMERGENCY EVACUATE"** button (or trigger an Egress route).
+- *What happens:* The backend calculates the safest exit route for every single fan based on their current section.
+- *Look at the Fan Window:* The chat is interrupted by a high-priority push notification, and the map automatically draws a route to the safest exit gate.
 
 ---
 
-## Security — Production Grade
+## 🏗️ TECHNICAL ARCHITECTURE & SYSTEM DESIGN
 
-Stadium Sync treats security as a first-class requirement, not an afterthought.
+Stadium Sync is built on a highly decoupled, async-first architecture designed to handle tens of thousands of concurrent connections.
 
-- **QR Integrity:** SHA-256 checksum prevents forged tickets. Invalid checksums are rejected before the database is even queried.
-- **JWT Sessions:** 4-hour expiration tied to match duration. Role-embedded tokens (`fan`, `volunteer`, `admin`) enforce access at the route layer.
-- **IoT Separation:** Crowd sensor ingestion uses a separate `X-API-Key` header — sensor data never touches fan authentication paths.
-- **Rate Limiting:** AI endpoints: 10 req/min. IoT ingestion: 300 req/min. Auth: 10 req/min. Enforced via Redis-backed `slowapi`.
-- **Container Hardening:** Non-root `appuser` in a multi-stage Docker build — no dev dependencies in production image.
-
----
-
-## Proven Reliable — 57 Automated Tests
-
-```
-Phase 1: Foundation     — App startup, JWT, CORS, error schemas, DB tables
-Phase 2: Auth           — QR scan, checksum validation, inactive tickets, refresh
-Phase 3: Navigation     — Transit update, route math, auth guards
-Phase 4: Features       — Eco-vision, incident lifecycle, auto-dispatch
-Phase 5: Real-time      — IoT ingestion, crowd map, egress trigger, WebSocket ping
-Phase 6: End-to-End     — Full fan journey, JWT rejection, validation errors
+```text
+       ┌───────────────┐           ┌──────────────────┐
+       │   FAN APP     │           │ ADMIN DASHBOARD  │
+       │ (Vercel/Vite) │           │  (Vercel/Vite)   │
+       └───────┬───────┘           └────────┬─────────┘
+               │                            │
+               │ HTTP / WebSockets          │ HTTP / WebSockets
+               ▼                            ▼
+       ┌──────────────────────────────────────────────┐
+       │             FASTAPI BACKEND (Render)         │
+       │                                              │
+       │  ┌──────────────┐          ┌──────────────┐  │
+       │  │ Auth & JWT   │          │  WebSockets  │  │
+       │  └──────────────┘          └──────────────┘  │
+       │                                              │
+       │  ┌────────────────────────────────────────┐  │
+       │  │        AI ORCHESTRATION LAYER          │  │
+       │  │  (Incident Triage, Map Routing, Chat)  │  │
+       │  └───────┬─────────────────────────┬──────┘  │
+       └──────────┼─────────────────────────┼─────────┘
+                  │                         │
+            ┌─────▼─────┐             ┌─────▼─────┐
+            │ SQLITE DB │             │ LLM APIS  │
+            │(Persistent)             │(Gemini/NIM)
+            └───────────┘             └───────────┘
 ```
 
-Tests run against an in-memory SQLite database with no external dependencies — zero flakiness, zero cost, runs in 11 seconds.
+### The Stack
+- **Frontend:** React 18, Vite, TailwindCSS, Framer Motion, Lucide Icons, Axios.
+- **Backend:** FastAPI (Python 3.12), Uvicorn, SQLAlchemy 2.0 (Async), python-jose (JWT), passlib.
+- **Database:** SQLite (with WAL mode enabled) / PostgreSQL-ready via asyncpg.
+- **AI Models:** Google Gemini 1.5 Flash (Vision + Complex Routing), Nvidia NIM Llama 3.1 70B (Fast NLP Triage).
+
+### Why Async FastAPI?
+Handling 80,000 fans requires non-blocking I/O. FastAPI combined with async database drivers ensures that while the backend is waiting for an AI response from Google or Nvidia (which can take 500ms - 2000ms), the main thread is released to handle thousands of other incoming WebSocket heartbeats and requests.
+
+### The Real-Time WebSocket Engine
+The backend maintains a custom `ConnectionManager` (`backend/app/api/v1/websocket.py`).
+- **Fan Connections:** Stored in memory, mapped by `ticket_id` and `section_id`.
+- **Targeted Broadcasting:** When an incident happens in Section N1, the backend doesn't blast 80,000 users. It iterates through the `section_subscribers` mapping and pushes the alert *only* to fans sitting in N1, saving massive bandwidth.
 
 ---
 
-## The Stack
+## 📁 PROJECT STRUCTURE
 
-```
-Backend:   FastAPI · Python 3.12 · PostgreSQL · Redis · SQLAlchemy Async
-AI:        Google Gemini 2.0 Flash · NVIDIA Llama 3.1 70B (round-robin pool)  
-Frontend:  React 19 · Vite · TypeScript · Tailwind CSS · Framer Motion
-Real-time: FastAPI WebSockets · Custom ConnectionManager
-Auth:      JWT HS256 · SHA-256 QR checksum
-Deploy:    Docker (multi-stage) · Render (API) · Vercel (frontend)
+Stadium Sync is organized as a monorepo containing both the React frontend and the FastAPI backend.
+
+```text
+Stadium_Sync/
+├── backend/                   # Python FastAPI Backend
+│   ├── app/
+│   │   ├── api/v1/            # API routes (chat, admin, websockets, auth)
+│   │   ├── core/              # Security, settings, and rate limiting
+│   │   ├── models/            # SQLAlchemy ORM schemas (User, Ticket, Incident)
+│   │   └── services/          # Business logic, AI orchestration, incident management
+│   ├── check_db2.py           # Database verification & seeding script
+│   ├── Dockerfile             # Container definition for Render deployment
+│   ├── requirements.txt       # Python dependencies (openai, google-genai, fastapi)
+│   └── .env.example           # Environment variable template
+├── frontend/                  # React & Vite Frontend
+│   ├── src/
+│   │   ├── components/        # Reusable UI (StadiumChat, StadiumMap, QRScanner)
+│   │   ├── pages/             # Main views (AdminDashboard, FanView)
+│   │   ├── hooks/             # Custom WebSockets React hooks (useRealtime)
+│   │   └── lib/               # Utility functions and API clients
+│   ├── index.html             # Entry point
+│   ├── vite.config.ts         # Vite configuration
+│   └── package.json           # Node dependencies
+└── README.md
 ```
 
 ---
 
-## Try It
+## 💻 LOCAL DEVELOPMENT SETUP
 
-The system is live. Every API endpoint has a health check, every feature has a demo mode.
+To run Stadium Sync locally, you will need Node.js and Python 3.12+.
 
-**Quick Start (Development)**
+### 1. Clone the Repository
 ```bash
-# 1. Infrastructure
-docker compose up -d       # PostgreSQL + Redis
-
-# 2. Seed the stadium
-make seed                  # Stadium map, gates, test tickets
-
-# 3. Backend  
-cd backend && make dev     # → http://localhost:8000/docs
-
-# 4. Frontend
-cd frontend && npm run dev # → http://localhost:5173
+git clone https://github.com/your-org/Stadium_Sync.git
+cd Stadium_Sync
 ```
 
-**At the login screen:** click *"Dev Bypass"* to skip QR scanning and enter as a test fan (ticket-001, Section N101).
-
-**To trigger egress simulation:** click the *"Simulate Egress"* button in the top-left corner. Watch every connected device receive a real-time push event within 200ms.
-
-**Environment**
+### 2. Backend Setup
 ```bash
-cp backend/.env.example backend/.env
-# Fill in: DATABASE_URL, GEMINI_API_KEYS, REDIS_URL, SECRET_KEY
+cd backend
+python -m venv venv
+source venv/bin/activate  # (On Windows use `venv\Scripts\activate`)
+pip install -r requirements.txt
 ```
+
+Create a `.env` file based on `.env.example`:
+```ini
+# backend/.env
+GEMINI_API_KEY=your_google_ai_key
+NVIDIA_NIM_API_KEY=your_nvidia_api_key
+SECRET_KEY=generate_a_secure_random_string_here
+```
+
+Run the backend server:
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+*(The Swagger UI will be available at `http://localhost:8000/docs`)*
+
+### 3. Frontend Setup
+In a new terminal window:
+```bash
+cd frontend
+npm install
+```
+
+Create a `.env` file for the frontend:
+```ini
+# frontend/.env
+VITE_API_URL=http://localhost:8000
+```
+
+Run the Vite development server:
+```bash
+npm run dev
+```
+*(The Fan App will be available at `http://localhost:5173`)*
 
 ---
 
-## Make Commands
+## 🗄️ DATABASE SCHEMA & ERD
 
-```bash
-make docker-up    # Start infrastructure
-make seed         # Seed stadium data
-make dev          # Start backend (port 8000)
-make test         # Run all 57 tests
-make test-all     # Tests + coverage report
-make lint         # Lint Python (ruff)
-```
+The system is built on a robust relational database, accessed asynchronously via SQLAlchemy.
+
+### `users` Table
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary Key |
+| role | Enum | FAN, ADMIN, VOLUNTEER |
+| created_at | Timestamp | Account creation |
+
+### `tickets` Table
+| Column | Type | Description |
+|--------|------|-------------|
+| id | String | e.g., 'ticket-001' |
+| holder_name | String | Fan name |
+| match_id | String | e.g., 'M2026-QF1' |
+| checksum | String | Cryptographic anti-spoofing hash |
+| seat_id | UUID | Foreign Key to seats |
+
+### `incidents` Table
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary Key |
+| ticket_id | String | Who reported it |
+| severity | Enum | LOW, MEDIUM, HIGH, CRITICAL |
+| category | String | medical, hazard, security, maintenance |
+| status | Enum | OPEN, ASSIGNED, RESOLVED |
+| ai_triage_result| JSON | Full LLM reasoning payload stored for auditing |
 
 ---
 
-*Stadium Sync — Built for the FIFA World Cup 2026 Hack2Skill Challenge.*  
-*One AI. 80,000 fans. Zero compromises.*
+## 🔌 API REFERENCE DOCUMENTATION
+
+### Authentication
+`POST /api/v1/auth/scan-ticket`
+Validates physical QR codes and issues JWTs.
+- **Payload:** `{"ticket_id": "string", "match_id": "string", "checksum": "string"}`
+- **Response:** `200 OK` with `{"access_token": "eyJ...", "token_type": "bearer"}`
+
+### AI Chat Orchestration
+`POST /api/v1/chat/message`
+The core agentic endpoint for fans. Internally routes to Gemini.
+- **Payload:** `{"message": "string", "image_base64": "string?", "history": [{"role":"user", "content":"hello"}]}`
+- **Response:** 
+```json
+{
+  "message": "I'll highlight your seat on the map! 🎯",
+  "ui_action": "SHOW_MAP",
+  "payload": {
+     "target": "seat"
+  }
+}
+```
+
+### Admin Operations
+`GET /api/v1/admin/state`
+Returns the entire stadium snapshot for the dashboard.
+- **Response:** Includes `crowd_map` (live density), `incidents` (active queue), `active_promos`, `volunteers`.
+
+`PATCH /api/v1/admin/incidents/{incident_id}/status`
+Updates incident status and triggers WebSocket fan confirmation.
+
+---
+
+## 🔐 SECURITY & AUTHENTICATION
+
+1. **Cryptographic Anti-Spoofing:** QR codes contain a cryptographic checksum. If a fan tries to guess a `ticket_id`, the `/scan-ticket` endpoint rejects it, preventing brute-force seat stealing.
+2. **Stateless JWTs:** The entire fan session is encoded in an HMAC-SHA256 JWT. This means the backend doesn't need to perform a database lookup on every chat message just to know where the fan is sitting.
+3. **CORS:** Strictly configured in `backend/app/core/config.py` to allow Vercel origins while blocking malicious cross-site requests.
+4. **WebSocket Validation:** The `ws://` endpoint requires the JWT token in the query parameters. Invalid tokens immediately drop the TCP connection.
+
+---
+
+## 🚀 FUTURE ROADMAP
+
+If we had more time for the Hackathon, we would implement:
+1. **IoT Integration:** Real hardware turnstiles sending MQTT messages to update the `crowd_map` in real-time, replacing our simulated crowd service.
+2. **Computer Vision Crowd Counting:** Processing CCTV feeds through YOLOv8 to automatically detect crowd crushes without waiting for ticket scans.
+3. **Multi-Language Audio (TTS/STT):** Real-time speech-to-text translation so fans can speak into their phones in any language (e.g. Spanish, French, Japanese) and the AI responds via Text-To-Speech in their native tongue.
+4. **Volunteer Mobile App:** A dedicated React Native app for volunteers to receive push notifications, GPS routing to incident locations, and task acceptance buttons.
+
+---
+
+## 🏆 CONCLUSION
+
+Stadium Sync proves that with modern Generative AI, WebSockets, and a decoupled architecture, we can move past static dashboards and reactive security. We can build stadiums that *think*.
+
+Thank you to the Hack2Skill judges! 
+Enjoy the demo!

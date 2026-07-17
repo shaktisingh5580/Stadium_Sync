@@ -172,6 +172,17 @@ async def update_incident_status(
 
     logger.info(f"Incident {incident_id} updated to {new_status} by {updated_by}")
 
+    # Notify admins to refresh their dashboard
     await manager.broadcast_to_admins({"type": "admin_refresh_required"})
+
+    # Send a confirmation message directly to the fan who reported it
+    await manager.send_to_fan(
+        incident.ticket_id,
+        {
+            "type": "chat_message",
+            "role": "assistant",
+            "content": f"✅ **Update on your report:** The incident has been marked as **{new_status.replace('_', ' ').upper()}**. \n\n*Note: {note}*"
+        }
+    )
 
     return update
