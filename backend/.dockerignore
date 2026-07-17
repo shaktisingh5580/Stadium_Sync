@@ -5,8 +5,7 @@ __pycache__
 .env.local
 .venv
 venv
-*.db
-*.sqlite
+# (Removed *.db and *.sqlite so we can copy our pre-populated DB for demo)
 .git
 .gitignore
 tests/
