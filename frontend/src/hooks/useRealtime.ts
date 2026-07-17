@@ -53,8 +53,10 @@ export function useRealtime() {
     const token = localStorage.getItem('stadium_sync_token');
     if (!token) return;
 
-    // Use localhost:8000 since we're in dev, or relative wss in prod
-    const wsUrl = `ws://localhost:8000/api/v1/ws?token=${token}`;
+    // Derive WebSocket URL from API base URL
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+    const wsBase = baseUrl.replace(/^http/, 'ws');
+    const wsUrl = `${wsBase}/ws?token=${token}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {

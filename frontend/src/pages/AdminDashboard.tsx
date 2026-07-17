@@ -71,8 +71,9 @@ export function AdminDashboard() {
     fetchState();
     
     // Connect to WebSocket for instant real-time updates
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/api/v1/ws';
-    const ws = new WebSocket(`${wsUrl}?token=admin-demo-token`);
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+    const wsBase = baseUrl.replace(/^http/, 'ws');
+    const ws = new WebSocket(`${wsBase}/ws?token=admin-demo-token`);
     
     ws.onopen = () => console.log('Admin WebSocket connected');
     
