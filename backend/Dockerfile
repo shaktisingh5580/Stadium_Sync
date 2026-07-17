@@ -25,6 +25,8 @@ COPY --from=builder /install /usr/local
 # Copy application code
 COPY app/ ./app/
 COPY scripts/ ./scripts/
+# Include pre-populated demo database if it exists
+COPY stadium_sync.db* ./
 
 # Create non-root user for security and give it permissions
 RUN adduser --disabled-password --no-create-home appuser
