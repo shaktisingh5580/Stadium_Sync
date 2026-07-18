@@ -47,10 +47,9 @@ class Settings(BaseSettings):
 
     # ── Google Gemini AI & NVIDIA ──
     GEMINI_API_KEY_1: str = ""
-    GEMINI_API_KEY_2: str = ""
     GEMINI_API_KEY_3: str = ""
     NVIDIA_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # ── Telegram Bots ──
     TELEGRAM_FAN_BOT_TOKEN: str = ""

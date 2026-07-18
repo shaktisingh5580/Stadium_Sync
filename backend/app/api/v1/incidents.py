@@ -252,13 +252,16 @@ async def resolve_incident_endpoint(
     db.add(incident)
     await db.commit()
     
+    # Notify admin dashboard to refresh
+    await manager.broadcast_to_admins({"type": "admin_refresh_required"})
+    
     # Notify fan
     await manager.send_to_fan(
         incident.ticket_id, 
         {
             "type": "chat_message", 
-            "role": "system", 
-            "content": "Your reported issue has been completely resolved and all set. Thank you!"
+            "role": "assistant", 
+            "content": "✅ **UPDATE**: Your reported issue has been completely resolved and all set. Thank you for keeping the stadium safe!"
         }
     )
     

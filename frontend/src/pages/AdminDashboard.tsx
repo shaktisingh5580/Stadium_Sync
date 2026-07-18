@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ShieldAlert, Users, TrendingUp, Send, Loader2, RefreshCw, AlertTriangle, BadgePercent, Volume2, MessageCircle, MapIcon, XIcon, InfoIcon, UserCircle2, UserCheck, Activity } from 'lucide-react';
+import { ShieldAlert, Users, TrendingUp, Send, Loader2, RefreshCw, AlertTriangle, BadgePercent, Volume2, MessageCircle, MapIcon, XIcon, InfoIcon, UserCircle2, UserCheck, Activity, CheckCircle2 } from 'lucide-react';
 import { getAdminState, sendAdminChat, triggerEvacuation, evaluatePromotions, resolveIncident } from '@/api/admin';
 import { triggerEgressSimulation } from '@/api';
 import type { AdminState } from '@/api/admin';
@@ -24,13 +24,77 @@ export function AdminDashboard() {
   const [promoLoading, setPromoLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  const fetchState = useCallback(async () => {
+    try {
+      const data = await getAdminState();
+      setState(data);
+    } catch (e) {
+      console.error('Failed to fetch admin state:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchState();
+    
+    // Robust WebSocket Connection with auto-reconnect
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout;
+
+    const connectWebSocket = () => {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+      const wsBase = baseUrl.replace(/^http/, 'ws');
+      ws = new WebSocket(`${wsBase}/ws?token=admin-demo-token`);
+      
+      ws.onopen = () => {
+        console.log('Admin WebSocket connected successfully');
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'admin_refresh_required') {
+            console.log("WebSocket triggered refresh...");
+            fetchState(); // Instantly refresh data when backend flags a change
+          }
+        } catch (e) {
+          console.error('WebSocket message parsing error', e);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('Admin WebSocket disconnected. Reconnecting in 3s...');
+        reconnectTimeout = setTimeout(connectWebSocket, 3000);
+      };
+
+      ws.onerror = (err) => {
+        console.error("Admin WebSocket error:", err);
+        ws?.close();
+      };
+    };
+
+    connectWebSocket();
+
+    return () => {
+      clearTimeout(reconnectTimeout);
+      if (ws) {
+        ws.onclose = null; // Prevent reconnect on unmount
+        ws.close();
+      }
+    };
+  }, [fetchState]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory]);
+
   const handleEvacuate = async () => {
-    if (confirm("Are you absolutely sure? This will trigger a stadium-wide evacuation alert to all fans.")) {
+    if (confirm("🚨 CRITICAL ACTION: Are you sure you want to trigger a stadium-wide evacuation?")) {
       setEvacuating(true);
       try {
         await triggerEvacuation("ALL_ZONES");
         await triggerEgressSimulation();
-        alert("EVACUATION TRIGGERED SUCCESSFULLY.");
       } catch (e) {
         alert("Error triggering evacuation!");
         console.error(e);
@@ -46,8 +110,6 @@ export function AdminDashboard() {
       const res = await evaluatePromotions();
       if (res.status === "promotions_triggered") {
         alert("Flash Sale Generated: " + res.promotion.message);
-      } else {
-        alert(res.message || "No promotions generated.");
       }
     } catch (e) {
       alert("Error generating promotions.");
@@ -56,46 +118,15 @@ export function AdminDashboard() {
     }
   };
 
-  const fetchState = async () => {
+  const handleResolveIncident = async (incidentId: string) => {
     try {
-      const data = await getAdminState();
-      setState(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+      await resolveIncident(incidentId);
+      setSelectedIncident(null);
+      // The backend will send an admin_refresh_required WS event which updates the dashboard!
+    } catch (err) {
+      console.error("Failed to resolve incident", err);
     }
   };
-
-  useEffect(() => {
-    fetchState();
-    
-    // Connect to WebSocket for instant real-time updates
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-    const wsBase = baseUrl.replace(/^http/, 'ws');
-    const ws = new WebSocket(`${wsBase}/ws?token=admin-demo-token`);
-    
-    ws.onopen = () => console.log('Admin WebSocket connected');
-    
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'admin_refresh_required') {
-          fetchState();
-        }
-      } catch (e) {
-        console.error('WebSocket message parsing error', e);
-      }
-    };
-
-    return () => {
-      ws.close();
-    };
-  }, []);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory]);
 
   const handleSend = async () => {
     if (!chatInput.trim()) return;
@@ -115,14 +146,13 @@ export function AdminDashboard() {
   };
 
   if (loading) {
-    return <div className="h-screen w-full flex items-center justify-center bg-slate-950 text-white"><Loader2 className="animate-spin w-8 h-8" /></div>;
+    return <div className="h-screen w-full flex items-center justify-center bg-[#0a0f1c] text-white"><Loader2 className="animate-spin w-8 h-8 text-blue-500" /></div>;
   }
 
   const criticalIncidents = state?.incidents.filter(i => i.severity === 'critical' || i.severity === 'high') || [];
   const allIncidents = state?.incidents || [];
   const predictiveAlerts = state?.crowd_map.sections.filter(s => s.predicted_mins_to_85 !== null && s.predicted_mins_to_85 < 20) || [];
 
-  // Build heatmap data object mapping section_id to density_pct
   const heatmapData: Record<string, number> = {};
   if (state?.crowd_map?.sections) {
     state.crowd_map.sections.forEach(s => {
@@ -131,130 +161,187 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-slate-950 text-slate-200 overflow-hidden font-sans relative">
-      {/* Dashboard Full Width */}
-      <div className="flex-1 flex flex-col p-6 overflow-y-auto w-full">
-        <div className="flex justify-between items-center mb-8 max-w-7xl mx-auto w-full">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <ShieldAlert className="w-6 h-6 text-blue-500" />
-            Command Center
-          </h1>
+    <div className="flex h-screen w-full bg-[#0a0f1c] text-slate-200 overflow-hidden font-sans relative selection:bg-blue-500/30">
+      
+      {/* Background ambient glows */}
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-900/20 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-900/20 blur-[120px] pointer-events-none" />
+
+      {/* Main Dashboard */}
+      <div className="flex-1 flex flex-col p-8 overflow-y-auto w-full z-10 custom-scrollbar">
+        <div className="flex justify-between items-center mb-10 max-w-7xl mx-auto w-full">
+          <div>
+            <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 flex items-center gap-3">
+              <ShieldAlert className="w-8 h-8 text-blue-500 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+              STADIUM COMMAND CENTER
+            </h1>
+            <p className="text-slate-400 text-sm mt-1 font-medium tracking-wide">AI-Powered Operations & Real-Time Monitoring</p>
+          </div>
+          
           <div className="flex gap-4">
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={handlePromos} 
               disabled={promoLoading}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50"
             >
               <BadgePercent className="w-5 h-5" />
               {promoLoading ? "ANALYZING..." : "RUN PROMO AI"}
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.05, boxShadow: "0px 0px 20px rgba(220, 38, 38, 0.4)" }}
+              whileTap={{ scale: 0.95 }}
               onClick={handleEvacuate} 
               disabled={evacuating}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold flex items-center gap-2 transition-colors disabled:opacity-50 shadow-[0_0_15px_rgba(220,38,38,0.5)]"
+              className="px-5 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50"
             >
               <AlertTriangle className="w-5 h-5" />
               {evacuating ? "TRIGGERING..." : "EMERGENCY EVACUATE"}
-            </button>
-            <button onClick={fetchState} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
-              <RefreshCw className="w-5 h-5 text-slate-400" />
-            </button>
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.1, rotate: 180 }}
+              transition={{ duration: 0.3 }}
+              onClick={fetchState} 
+              className="p-3 bg-slate-800/50 border border-slate-700 hover:bg-slate-700/50 rounded-xl text-slate-300"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </motion.button>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-4 gap-4 mb-8">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-              <div className="text-slate-400 text-sm font-medium mb-1">Stadium Occupancy</div>
-              <div className="text-3xl font-bold text-white flex items-center gap-2">
-                <Users className="w-6 h-6 text-emerald-500" />
+          {/* Top KPI Cards */}
+          <div className="grid grid-cols-4 gap-6 mb-8">
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="text-slate-400 text-sm font-semibold mb-2 tracking-wide">STADIUM OCCUPANCY</div>
+              <div className="text-4xl font-black text-white flex items-center gap-3">
+                <Users className="w-8 h-8 text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
                 {state?.crowd_map.total_occupancy_pct}%
               </div>
             </div>
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-              <div className="text-slate-400 text-sm font-medium mb-1">Active Incidents</div>
-              <div className="text-3xl font-bold text-white flex items-center gap-2">
-                <ShieldAlert className="w-6 h-6 text-amber-500" />
+            
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="text-slate-400 text-sm font-semibold mb-2 tracking-wide">ACTIVE INCIDENTS</div>
+              <div className="text-4xl font-black text-white flex items-center gap-3">
+                <ShieldAlert className="w-8 h-8 text-blue-400 drop-shadow-[0_0_10px_rgba(96,165,250,0.8)]" />
                 {allIncidents.length}
               </div>
             </div>
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-              <div className="text-slate-400 text-sm font-medium mb-1">Critical Issues</div>
-              <div className="text-3xl font-bold text-rose-500 flex items-center gap-2">
-                <ShieldAlert className="w-6 h-6 text-rose-500" />
+
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-rose-900/30 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="text-slate-400 text-sm font-semibold mb-2 tracking-wide">CRITICAL ISSUES</div>
+              <div className="text-4xl font-black text-rose-400 flex items-center gap-3 drop-shadow-[0_0_15px_rgba(251,113,133,0.4)]">
+                <AlertTriangle className="w-8 h-8 text-rose-500" />
                 {criticalIncidents.length}
               </div>
             </div>
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-              <div className="text-slate-400 text-sm font-medium mb-1">Acoustic Peak</div>
-              <div className="text-3xl font-bold text-purple-400 flex items-center gap-2 tracking-wider">
-                <Volume2 className="w-6 h-6 text-purple-500" />
+
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-purple-900/30 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="text-slate-400 text-sm font-semibold mb-2 tracking-wide">ACOUSTIC PEAK</div>
+              <div className="text-4xl font-black text-purple-300 flex items-center gap-3">
+                <Volume2 className="w-8 h-8 text-purple-400 drop-shadow-[0_0_15px_rgba(192,132,252,0.6)]" />
                 {state?.crowd_map.sections.some(s => s.acoustic_status === 'CHEERING' || s.acoustic_status === 'TENSE') ? 'LOUD' : 'NORMAL'}
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-8">
             {/* Predictive Alerts */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col min-h-[300px]">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-indigo-400" />
-                Predictive Alerts
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 flex flex-col min-h-[400px] shadow-xl">
+              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <TrendingUp className="w-6 h-6 text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)]" />
+                AI Predictive Congestion
               </h2>
-              <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
                 {predictiveAlerts.length === 0 ? (
-                  <div className="text-slate-500 text-sm text-center py-4">No imminent congestion detected.</div>
+                  <div className="flex flex-col items-center justify-center h-full text-slate-500 opacity-60">
+                    <CheckCircle2 className="w-12 h-12 mb-3 text-emerald-500" />
+                    <p className="font-medium tracking-wide text-sm">NO IMMINENT CONGESTION DETECTED</p>
+                  </div>
                 ) : (
                   predictiveAlerts.map(alert => (
-                    <div key={alert.section_id} className="bg-indigo-950/30 border border-indigo-900/50 rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-semibold text-indigo-300">{alert.section_name}</span>
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      key={alert.section_id} 
+                      className="bg-indigo-950/20 border border-indigo-500/20 rounded-xl p-4 hover:bg-indigo-900/30 transition-colors"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-bold text-indigo-300 text-lg">{alert.section_name}</span>
                         <div className="flex items-center gap-2">
                           {alert.acoustic_status && (
-                            <span className="text-[10px] font-mono bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30 flex items-center gap-1 uppercase tracking-wider">
+                            <span className="text-[10px] font-bold bg-purple-500/10 text-purple-300 px-2.5 py-1 rounded-md border border-purple-500/30 flex items-center gap-1 uppercase tracking-widest shadow-inner">
                               <Volume2 className="w-3 h-3" />
                               {alert.acoustic_status}
                             </span>
                           )}
-                          <span className="text-xs font-mono bg-indigo-900 text-indigo-200 px-2 py-0.5 rounded">
-                            {alert.density_pct.toFixed(1)}%
+                          <span className="text-xs font-bold bg-indigo-500/20 text-indigo-200 px-2.5 py-1 rounded-md shadow-inner border border-indigo-500/20">
+                            {alert.density_pct.toFixed(1)}% VOL
                           </span>
                         </div>
                       </div>
-                      <p className="text-sm text-indigo-200/70">
-                        Predicted to hit 85% capacity in <span className="font-bold text-white">{alert.predicted_mins_to_85} mins</span>.
+                      <p className="text-sm text-indigo-200/80 flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-indigo-400" />
+                        Predicted to hit critical (85%) capacity in <span className="font-bold text-white">{alert.predicted_mins_to_85} mins</span>.
                       </p>
-                    </div>
+                    </motion.div>
                   ))
                 )}
               </div>
             </div>
 
             {/* Active Incidents */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col min-h-[300px]">
-              <h2 className="text-lg font-semibold text-white mb-4">Live Incidents</h2>
-              <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 flex flex-col min-h-[400px] shadow-xl">
+              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <Activity className="w-6 h-6 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                Live Incident Feed
+              </h2>
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
                 {allIncidents.length === 0 ? (
-                  <div className="text-slate-500 text-sm text-center py-4">All clear.</div>
+                  <div className="flex flex-col items-center justify-center h-full text-slate-500 opacity-60">
+                    <CheckCircle2 className="w-12 h-12 mb-3 text-emerald-500" />
+                    <p className="font-medium tracking-wide text-sm">ALL CLEAR. NO ACTIVE INCIDENTS.</p>
+                  </div>
                 ) : (
                   allIncidents.map(inc => (
-                    <div key={inc.id} className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-semibold text-slate-300 capitalize">{inc.category}</span>
-                        <span className={`text-xs font-mono px-2 py-0.5 rounded ${inc.severity === 'critical' ? 'bg-rose-900 text-rose-200' : inc.severity === 'high' ? 'bg-amber-900 text-amber-200' : 'bg-slate-700 text-slate-300'}`}>
+                    <motion.div 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      key={inc.id} 
+                      className={`border rounded-xl p-4 transition-all hover:-translate-y-1 ${
+                        inc.severity === 'critical' ? 'bg-rose-950/20 border-rose-500/30 hover:bg-rose-900/30 hover:border-rose-500/50 hover:shadow-[0_0_15px_rgba(225,29,72,0.15)]' : 
+                        inc.severity === 'high' ? 'bg-amber-950/20 border-amber-500/30 hover:bg-amber-900/30' : 
+                        'bg-slate-800/40 border-slate-700 hover:bg-slate-700/60'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-bold text-white tracking-wide uppercase text-sm">{inc.category} Alert</span>
+                        <span className={`text-[10px] font-black px-2.5 py-1 rounded-md shadow-inner tracking-widest ${
+                          inc.severity === 'critical' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 
+                          inc.severity === 'high' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 
+                          'bg-slate-700/80 text-slate-300 border border-slate-600'
+                        }`}>
                           {inc.severity.toUpperCase()}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-400 line-clamp-2">
-                        {inc.description}
+                      <p className="text-sm text-slate-300/90 leading-relaxed line-clamp-2 italic border-l-2 border-slate-600 pl-3 my-3">
+                        "{inc.description}"
                       </p>
                       <button 
                         onClick={() => setSelectedIncident(inc)}
-                        className="mt-3 text-xs w-full bg-slate-700/50 hover:bg-slate-600 text-slate-300 py-1.5 px-3 rounded flex items-center justify-center gap-2 transition-colors border border-slate-600/50 hover:border-slate-500"
+                        className={`mt-4 w-full text-xs py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-all ${
+                          inc.severity === 'critical' ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20' :
+                          'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                        }`}
                       >
-                        <InfoIcon className="w-3 h-3" /> View Details & Dispatch
+                        <InfoIcon className="w-4 h-4" /> REVIEW & DISPATCH
                       </button>
-                    </div>
+                    </motion.div>
                   ))
                 )}
               </div>
@@ -264,72 +351,76 @@ export function AdminDashboard() {
       </div>
 
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-50">
-        <button 
+      <div className="fixed bottom-10 right-10 flex flex-col gap-5 z-50">
+        <motion.button 
+          whileHover={{ scale: 1.1, boxShadow: "0px 0px 20px rgba(52, 211, 153, 0.4)" }}
+          whileTap={{ scale: 0.9 }}
           onClick={() => setMapOpen(!mapOpen)} 
-          className="w-14 h-14 bg-emerald-600 rounded-full flex items-center justify-center shadow-lg hover:bg-emerald-500 hover:scale-110 transition-all"
-          title="Open Crowd Heatmap"
+          className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-xl transition-all"
         >
-          <MapIcon className="w-6 h-6 text-white"/>
-        </button>
-        <button 
+          <MapIcon className="w-7 h-7 text-white"/>
+        </motion.button>
+        <motion.button 
+          whileHover={{ scale: 1.1, boxShadow: "0px 0px 20px rgba(59, 130, 246, 0.4)" }}
+          whileTap={{ scale: 0.9 }}
           onClick={() => setChatOpen(!chatOpen)} 
-          className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-500 hover:scale-110 transition-all"
-          title="Open AI Copilot"
+          className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-xl transition-all"
         >
-          <MessageCircle className="w-6 h-6 text-white"/>
-        </button>
+          <MessageCircle className="w-7 h-7 text-white"/>
+        </motion.button>
       </div>
 
       {/* Floating Chat Overlay */}
       <AnimatePresence>
         {chatOpen && (
           <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-28 right-8 w-[400px] h-[600px] bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col z-50 overflow-hidden"
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            className="fixed bottom-32 right-10 w-[420px] h-[650px] bg-slate-900/95 backdrop-blur-2xl border border-slate-700 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col z-50 overflow-hidden"
           >
-            <div className="p-4 border-b border-slate-800 bg-slate-900/80 flex justify-between items-center">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <ShieldAlert className="w-5 h-5 text-blue-500" />
+            <div className="p-5 border-b border-slate-800 bg-slate-900/90 flex justify-between items-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent" />
+              <div className="relative z-10">
+                <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <ShieldAlert className="w-5 h-5 text-blue-400" />
+                  </div>
                   AI Copilot
                 </h2>
-                <p className="text-xs text-slate-400">Ask questions about the stadium state</p>
+                <p className="text-xs text-slate-400 mt-1">Nvidia Llama 3.1 & Gemini Operations</p>
               </div>
-              <button onClick={() => setChatOpen(false)} className="text-slate-400 hover:text-white transition-colors">
-                <XIcon className="w-5 h-5" />
+              <button onClick={() => setChatOpen(false)} className="text-slate-400 hover:text-white transition-colors relative z-10 p-2 bg-slate-800 rounded-full hover:bg-slate-700">
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
               {chatHistory.length === 0 && (
-                <div className="text-center text-slate-500 text-sm mt-10">
-                  <ShieldAlert className="w-8 h-8 mx-auto mb-3 opacity-50" />
-                  <p>I'm your AI Copilot.</p>
-                  <p className="mt-1 text-xs opacity-70">Try asking: "What are our biggest risks right now?"</p>
+                <div className="text-center text-slate-500 text-sm mt-12">
+                  <ShieldAlert className="w-10 h-10 mx-auto mb-4 opacity-40 text-blue-400" />
+                  <p className="font-medium text-slate-400">Command Center Copilot Active.</p>
+                  <p className="mt-2 text-xs opacity-60">"Are there any bottlenecks forming near Gate C?"</p>
                 </div>
               )}
               {chatHistory.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl px-4 py-2 ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'}`}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <div className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-sm'}`}>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                   </div>
                 </div>
               ))}
               {chatLoading && (
                 <div className="flex justify-start">
-                  <div className="max-w-[85%] rounded-2xl px-4 py-2 bg-slate-800 text-slate-200">
-                    <Loader2 className="w-4 h-4 animate-spin opacity-50" />
+                  <div className="max-w-[85%] rounded-2xl px-5 py-3 bg-slate-800 border border-slate-700 rounded-tl-sm">
+                    <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
                   </div>
                 </div>
               )}
               <div ref={chatEndRef} />
             </div>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-900/80">
+            <div className="p-4 border-t border-slate-800 bg-slate-900">
               <form 
                 onSubmit={(e) => { e.preventDefault(); handleSend(); }}
                 className="flex relative"
@@ -338,13 +429,13 @@ export function AdminDashboard() {
                   type="text"
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
-                  placeholder="Ask Copilot..."
-                  className="w-full bg-slate-800 border-none rounded-full pl-4 pr-12 py-3 text-sm text-white focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  placeholder="Query stadium data..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-5 pr-14 py-3.5 text-sm text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-600"
                 />
                 <button 
                   type="submit" 
                   disabled={!chatInput.trim() || chatLoading}
-                  className="absolute right-1 top-1 bottom-1 w-10 flex items-center justify-center bg-blue-600 rounded-full text-white disabled:opacity-50 hover:bg-blue-500 transition-colors"
+                  className="absolute right-2 top-2 bottom-2 w-10 flex items-center justify-center bg-blue-600 rounded-lg text-white disabled:opacity-50 hover:bg-blue-500 transition-colors shadow-md"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -359,27 +450,29 @@ export function AdminDashboard() {
         {mapOpen && (
           <motion.div 
             initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            animate={{ opacity: 1, backdropFilter: "blur(8px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
             exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            className="fixed inset-0 bg-slate-950/60 z-40 flex items-center justify-center p-8"
+            className="fixed inset-0 bg-slate-950/80 z-40 flex items-center justify-center p-8"
           >
             <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
+              initial={{ scale: 0.95, y: 15 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="relative w-full h-full flex flex-col items-center justify-center"
+              exit={{ scale: 0.95, y: 15 }}
+              className="relative w-full h-full flex flex-col items-center justify-center max-w-7xl mx-auto"
             >
-              <div className="absolute top-6 left-6 sm:top-10 sm:left-10 flex items-center gap-3 z-10 bg-slate-900/80 p-4 rounded-xl backdrop-blur-md border border-slate-800">
-                <MapIcon className="w-8 h-8 text-emerald-400" />
+              <div className="absolute top-8 left-8 flex items-center gap-4 z-10 bg-slate-900/90 p-5 rounded-2xl backdrop-blur-xl border border-slate-700 shadow-2xl">
+                <div className="p-3 bg-emerald-500/20 rounded-xl">
+                  <MapIcon className="w-8 h-8 text-emerald-400" />
+                </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white leading-tight">Live Crowd Heatmap</h2>
-                  <p className="text-sm text-slate-400 mt-1">Real-time occupancy density</p>
+                  <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200 leading-tight">Live Crowd Heatmap</h2>
+                  <p className="text-sm text-slate-400 font-medium">Real-time volumetric mapping</p>
                 </div>
               </div>
               
               <button 
                 onClick={() => setMapOpen(false)} 
-                className="absolute top-6 right-6 sm:top-10 sm:right-10 z-10 p-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-full backdrop-blur-md transition-colors border border-slate-700"
+                className="absolute top-8 right-8 z-10 p-4 bg-slate-900/90 hover:bg-slate-800 text-slate-300 rounded-full backdrop-blur-xl transition-all border border-slate-700 shadow-2xl hover:scale-110"
               >
                 <XIcon className="w-6 h-6" />
               </button>
@@ -389,19 +482,19 @@ export function AdminDashboard() {
               </div>
               
               {/* Heatmap Legend */}
-              <div className="absolute bottom-8 right-8 bg-slate-900/80 backdrop-blur-md border border-slate-800 p-4 rounded-xl flex items-center gap-4">
-                <span className="text-sm text-slate-400 font-medium">Density:</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-emerald-500 opacity-60"></div>
-                  <span className="text-xs text-slate-300">{'< 60%'}</span>
+              <div className="absolute bottom-10 right-10 bg-slate-900/90 backdrop-blur-xl border border-slate-700 p-5 rounded-2xl flex items-center gap-6 shadow-2xl">
+                <span className="text-sm text-slate-400 font-bold uppercase tracking-wider">Density:</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-md bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+                  <span className="text-sm font-semibold text-slate-200">{'< 60%'}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-amber-500 opacity-70"></div>
-                  <span className="text-xs text-slate-300">60-84%</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-md bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
+                  <span className="text-sm font-semibold text-slate-200">60-84%</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-rose-500 opacity-80"></div>
-                  <span className="text-xs text-slate-300">{'>= 85%'}</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-md bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]"></div>
+                  <span className="text-sm font-semibold text-slate-200">{'>= 85%'}</span>
                 </div>
               </div>
             </motion.div>
@@ -416,91 +509,88 @@ export function AdminDashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4"
           >
             <motion.div
-              initial={{ scale: 0.95, y: 10 }}
+              initial={{ scale: 0.95, y: 15 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 10 }}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl relative overflow-hidden"
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-slate-900 border border-slate-700 rounded-3xl p-8 max-w-lg w-full shadow-[0_20px_60px_rgba(0,0,0,0.6)] relative overflow-hidden"
             >
+              <div className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none" />
+              
               <button 
                 onClick={() => setSelectedIncident(null)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors p-2"
+                className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors p-2 bg-slate-800/80 rounded-full hover:bg-slate-700 z-10"
               >
                 <XIcon className="w-5 h-5" />
               </button>
 
-              <div className="flex items-center gap-3 mb-6 pr-8">
-                <div className={`p-2 rounded-lg ${selectedIncident.severity === 'critical' ? 'bg-rose-500/20 text-rose-400' : selectedIncident.severity === 'high' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700/50 text-slate-400'}`}>
-                  <AlertTriangle className="w-6 h-6" />
+              <div className="flex items-center gap-4 mb-8 relative z-10">
+                <div className={`p-3 rounded-2xl shadow-inner ${selectedIncident.severity === 'critical' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : selectedIncident.severity === 'high' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-300 border border-slate-700'}`}>
+                  <AlertTriangle className="w-8 h-8" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white capitalize">{selectedIncident.category || 'General'} Incident</h3>
+                  <h3 className="text-2xl font-black text-white capitalize tracking-wide">{selectedIncident.category || 'General'} Incident</h3>
                   <p className="text-sm text-slate-400 flex items-center gap-2 mt-1">
-                    Status: <span className="text-emerald-400 uppercase text-[10px] font-bold px-1.5 py-0.5 bg-emerald-500/10 rounded">{selectedIncident.status}</span>
+                    Status: <span className="text-emerald-400 uppercase text-xs font-black px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded shadow-sm">{selectedIncident.status}</span>
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-6 relative z-10">
                 <div>
-                  <h4 className="text-xs uppercase text-slate-500 font-bold mb-2">Reporter Details</h4>
-                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 flex items-start gap-3">
-                    <UserCircle2 className="w-8 h-8 text-slate-400 mt-1" />
+                  <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 tracking-widest pl-1">Reporter Log</h4>
+                  <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800 flex items-start gap-4">
+                    <UserCircle2 className="w-10 h-10 text-slate-500 mt-1" />
                     <div>
-                      <p className="text-sm text-white font-medium">Carlos Rivera (Fan App)</p>
-                      <p className="text-xs text-slate-400 mt-1">Location: Section N101, Row 1, Seat 1</p>
-                      <p className="text-sm text-slate-300 mt-2 p-2 bg-slate-900/50 rounded italic border-l-2 border-slate-600">
-                        "{selectedIncident.description}"
-                      </p>
+                      <p className="text-sm text-white font-bold">Carlos Rivera (Fan App)</p>
+                      <p className="text-xs text-slate-400 mt-1 font-medium bg-slate-800 inline-block px-2 py-0.5 rounded">Section N101, Row 1, Seat 1</p>
+                      <div className="mt-3 p-3 bg-blue-900/10 border-l-4 border-blue-500/50 rounded-r-lg">
+                        <p className="text-sm text-slate-300 italic">
+                          "{selectedIncident.description}"
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-xs uppercase text-slate-500 font-bold mb-2">Dispatched Volunteer</h4>
-                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 flex items-start gap-3">
-                    <UserCheck className="w-8 h-8 text-blue-400 mt-1" />
+                  <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 tracking-widest pl-1">Dispatch Protocol</h4>
+                  <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800 flex items-start gap-4">
+                    <UserCheck className="w-10 h-10 text-blue-500 mt-1" />
                     <div className="flex-1">
                       <div className="flex justify-between items-start">
-                        <p className="text-sm text-white font-medium">{selectedIncident.volunteer_name || "Volunteer Team Alpha"}</p>
-                        <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded uppercase font-bold">{selectedIncident.volunteer_name ? "Assigned" : "Pending"}</span>
+                        <p className="text-sm text-white font-bold">{selectedIncident.volunteer_name || "Response Team Alpha"}</p>
+                        <span className="text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-full uppercase font-bold tracking-widest">{selectedIncident.volunteer_name ? "Assigned" : "Pending"}</span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-1">Status: {selectedIncident.volunteer_name ? "Assessing situation..." : "Assigning volunteer..."}</p>
+                      <p className="text-xs text-slate-400 mt-1.5 font-medium">{selectedIncident.volunteer_name ? "Currently assessing situation on-site." : "Awaiting unit assignment..."}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-800 pt-6">
-                  <h4 className="text-xs uppercase text-slate-500 font-bold mb-3 flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-emerald-400" />
-                    AI Auto-Resolution Status
-                  </h4>
-                  <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-xl p-4">
-                    <p className="text-sm text-emerald-200 leading-relaxed">
-                      <span className="font-bold text-emerald-400">Automated Dispatch Complete:</span> The AI Copilot has already routed the nearest volunteer team to this row. The regional medical team has been pre-notified of the situation on their zone dashboards.
+                <div className="border-t border-slate-800 pt-6 mt-8">
+                  <div className="bg-gradient-to-r from-emerald-900/30 to-slate-900 border border-emerald-500/30 rounded-2xl p-5 shadow-lg">
+                    <h4 className="text-xs uppercase text-emerald-400 font-bold mb-3 flex items-center gap-2 tracking-widest">
+                      <Activity className="w-4 h-4" />
+                      AI Copilot Assessment
+                    </h4>
+                    <p className="text-sm text-emerald-100/80 leading-relaxed font-medium">
+                      <span className="text-emerald-400 font-bold">Automated Routing:</span> The AI has assigned the closest unit to this section. Medical staff pre-notified.
                     </p>
-                    <div className="mt-4 flex gap-3">
+                    <div className="mt-5 flex gap-3">
                       <button 
                         onClick={() => setSelectedIncident(null)}
-                        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-700"
+                        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm font-bold transition-all border border-slate-700 hover:scale-[1.02]"
                       >
-                        Close Details
+                        CLOSE
                       </button>
                       <button 
-                        onClick={async () => { 
-                          try {
-                            await resolveIncident(selectedIncident.id);
-                            setSelectedIncident(null); 
-                            fetchState(); // Refresh dashboard
-                          } catch (err) {
-                            console.error("Failed to resolve incident", err);
-                          }
-                        }}
-                        className="flex-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 py-2 rounded-lg text-sm font-bold transition-colors border border-emerald-500/30"
+                        onClick={() => handleResolveIncident(selectedIncident.id)}
+                        className="flex-[2] bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:scale-[1.02] flex items-center justify-center gap-2"
                       >
-                        Force Resolve
+                        <CheckCircle2 className="w-4 h-4" />
+                        MARK RESOLVED (NOTIFY FAN)
                       </button>
                     </div>
                   </div>

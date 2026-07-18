@@ -1,7 +1,5 @@
 # 🏟️ STADIUM SYNC: THE AI OPERATING SYSTEM FOR FIFA WORLD CUP 2026
 
-![Stadium Sync Hero](https://via.placeholder.com/1200x400/0f172a/3b82f6?text=STADIUM+SYNC+-+AI+OPERATING+SYSTEM)
-
 > **"Stadium Sync is not a chatbot. It is the centralized nervous system of the stadium."**
 > 
 > It continuously understands every fan, volunteer, sensor, gate, and incident — predicts problems before they happen — and autonomously coordinates 80,000 people toward a safer, smarter, and greener match-day experience.

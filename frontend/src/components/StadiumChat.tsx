@@ -125,7 +125,6 @@ export const StadiumChat: React.FC = () => {
           setActivePoi(undefined);
           setActiveHeatmap(undefined);
           break;
-        // Other cases can be handled here (QR scanner, Eco Vision results, etc.)
       }
     }
   }, [messages]);
@@ -135,53 +134,11 @@ export const StadiumChat: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-full flex flex-row items-center justify-center overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden bg-slate-950 flex flex-col">
       
-      {/* Side Map (Left side when open) */}
-      <AnimatePresence>
-        {mapVisible && (
-          <motion.div 
-            initial={{ opacity: 0, width: "0%" }}
-            animate={{ opacity: 1, width: "50%" }}
-            exit={{ opacity: 0, width: "0%" }}
-            transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="h-full flex items-center justify-center relative overflow-hidden"
-          >
-            {/* Scale the massive 800px map down to fit the side panel */}
-            <div className="w-[800px] h-[800px] origin-center scale-[0.5] md:scale-[0.6] xl:scale-[0.8] flex-shrink-0 relative">
-              <StadiumMap 
-                egressRoute={activeRoute}
-                fanSeat={activeSeat}
-                targetPoi={activePoi}
-                needsAccessibility={session?.needsAccessibility}
-                heatmapData={activeHeatmap}
-              />
-            </div>
-            
-            {/* Proper Close Button fixed in the top right corner of the map panel */}
-            <button 
-              onClick={() => setMapVisible(false)}
-              className="absolute top-6 right-6 bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md border border-red-500/50 text-white rounded-full p-3 z-50 transition-all shadow-lg flex items-center justify-center cursor-pointer"
-              title="Close Map"
-            >
-              <XIcon size={24} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Chat Interface (Right side or Full screen) */}
-      <motion.div 
-        animate={{ 
-          width: mapVisible ? "50%" : "100%",
-        }}
-        transition={{ duration: 0.6, ease: "easeInOut" }}
-        className="h-full flex flex-col items-center justify-center"
-      >
-        <div className={cn(
-          "h-full w-full transition-all duration-700 flex flex-col items-center justify-center",
-          mapVisible ? "max-w-2xl px-4" : "max-w-4xl px-8"
-        )}>
+      {/* Main Chat Interface (Always visible underneath the map) */}
+      <div className="w-full h-full flex flex-col items-center justify-center p-4">
+        <div className="h-full w-full max-w-4xl flex flex-col items-center justify-center">
           <AnimatedAIChat 
             messages={messages}
             onSendMessage={handleSendMessage}
@@ -189,7 +146,59 @@ export const StadiumChat: React.FC = () => {
             fanSession={session}
           />
         </div>
-      </motion.div>
+      </div>
+
+      {/* Full-screen Overlay Map Modal */}
+      <AnimatePresence>
+        {mapVisible && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} // smooth spring
+            className="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-xl flex flex-col"
+          >
+            {/* Header for Map Modal */}
+            <div className="w-full p-4 flex items-center justify-between border-b border-white/10 bg-slate-900/50">
+              <h2 className="text-white font-semibold text-lg flex items-center gap-2">
+                <MapIcon className="text-emerald-400" size={20} />
+                Stadium Map
+              </h2>
+              <button 
+                onClick={() => setMapVisible(false)}
+                className="bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-all flex items-center justify-center cursor-pointer"
+                title="Close Map"
+              >
+                <XIcon size={20} />
+              </button>
+            </div>
+
+            {/* Map Container */}
+            <div className="flex-1 w-full h-full flex items-center justify-center relative overflow-hidden">
+              {/* Scaled Map - adjusted for full-screen overlay on different devices */}
+              <div className="w-[800px] h-[800px] origin-center scale-[0.45] sm:scale-[0.6] md:scale-[0.7] lg:scale-[0.9] flex-shrink-0 relative">
+                <StadiumMap 
+                  egressRoute={activeRoute}
+                  fanSeat={activeSeat}
+                  targetPoi={activePoi}
+                  needsAccessibility={session?.needsAccessibility}
+                  heatmapData={activeHeatmap}
+                />
+              </div>
+            </div>
+            
+            {/* Action buttons overlaying the bottom of the map modal */}
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center px-4 pointer-events-none">
+              <button
+                onClick={() => setMapVisible(false)}
+                className="pointer-events-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-full shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex items-center gap-2"
+              >
+                Return to Chat
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {egressData && !emergencyData && (
@@ -206,18 +215,18 @@ export const StadiumChat: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Flash Sale Notification */}
+      {/* Flash Sale Notification - Stays above everything */}
       <AnimatePresence>
         {flashData && (
           <motion.div
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[80] w-[90%] max-w-sm bg-gradient-to-br from-emerald-500 to-teal-700 text-white p-5 rounded-2xl shadow-2xl border border-emerald-400/50"
+            className="absolute bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[80] w-[90%] max-w-sm bg-gradient-to-br from-emerald-500 to-teal-700 text-white p-5 rounded-2xl shadow-2xl border border-emerald-400/50"
           >
             <button 
               onClick={clearFlashAlert}
-              className="absolute top-3 right-3 p-1.5 bg-black/20 hover:bg-black/40 rounded-full transition-colors"
+              className="absolute top-3 right-3 p-1.5 bg-black/20 hover:bg-black/40 rounded-full transition-colors cursor-pointer"
             >
               <XIcon size={16} />
             </button>
@@ -236,7 +245,7 @@ export const StadiumChat: React.FC = () => {
                 clearFlashAlert();
                 sendMessage(`Route me to ${flashData.vendor_name} for the flash sale!`);
               }}
-              className="w-full py-2.5 bg-white text-emerald-700 hover:bg-emerald-50 rounded-xl font-bold text-sm transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-white text-emerald-700 hover:bg-emerald-50 rounded-xl font-bold text-sm transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
             >
               <MapIcon size={16} />
               Route Me There
@@ -245,7 +254,7 @@ export const StadiumChat: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Map Open Toggle Button */}
+      {/* Map Open Toggle Button - Shown only when map is hidden */}
       <AnimatePresence>
         {!mapVisible && (
           <motion.button
@@ -253,23 +262,24 @@ export const StadiumChat: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             onClick={() => setMapVisible(true)}
-            className="absolute top-6 right-6 z-20 px-4 py-3 bg-emerald-500/20 hover:bg-emerald-500/40 backdrop-blur-md border border-emerald-500/50 text-emerald-400 rounded-full flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+            className="absolute top-4 right-4 md:top-6 md:right-6 z-40 px-3 md:px-4 py-2 md:py-3 bg-emerald-500/20 hover:bg-emerald-500/40 backdrop-blur-md border border-emerald-500/50 text-emerald-400 rounded-full flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]"
             title="Open Map"
           >
             <MapIcon size={20} />
-            <span className="text-sm font-semibold">View Map</span>
+            <span className="text-xs md:text-sm font-semibold">View Map</span>
           </motion.button>
         )}
       </AnimatePresence>
 
       {/* Dev Simulation Button (for Hackathon Demo) */}
-      <div className="absolute top-6 left-6 z-20 flex gap-2">
+      <div className="absolute top-4 left-4 md:top-6 md:left-6 z-40 flex gap-2">
         <button
           onClick={() => triggerEgressSimulation()}
-          className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/40 border border-red-500/50 text-red-400 text-xs font-bold rounded-lg backdrop-blur-sm transition-colors cursor-pointer flex items-center gap-2"
+          className="px-2 md:px-3 py-1 md:py-1.5 bg-red-500/20 hover:bg-red-500/40 border border-red-500/50 text-red-400 text-[10px] md:text-xs font-bold rounded-lg backdrop-blur-sm transition-colors cursor-pointer flex items-center gap-2"
         >
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-slate-500'}`} />
-          Simulate Egress
+          <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-slate-500'}`} />
+          <span className="hidden sm:inline">Simulate Egress</span>
+          <span className="sm:hidden">Egress</span>
         </button>
       </div>
     </div>

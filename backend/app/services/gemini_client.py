@@ -28,7 +28,6 @@ def _get_client(client_type=None, purpose=None):
     if not _genai_clients:
         keys_gemini = []
         if settings.GEMINI_API_KEY_1: keys_gemini.append(settings.GEMINI_API_KEY_1.strip())
-        if settings.GEMINI_API_KEY_2: keys_gemini.append(settings.GEMINI_API_KEY_2.strip())
         if settings.GEMINI_API_KEY_3: keys_gemini.append(settings.GEMINI_API_KEY_3.strip())
         
         nvidia_key = settings.NVIDIA_API_KEY.strip() if settings.NVIDIA_API_KEY else None
@@ -67,10 +66,9 @@ def _get_client(client_type=None, purpose=None):
         # Images MUST go to Gemini
         available = [c for c in available if c.get("type") == "gemini"]
     elif purpose in ("admin_chat", "fan_chat"):
-        # Rotate across all available Gemini keys for Chat
-        gemini_clients = [c for c in available if c.get("type") == "gemini"]
-        if gemini_clients:
-            available = gemini_clients
+        # Use all available clients (Gemini + NVIDIA) for Chat
+        # The retry loop in agentic_chat will automatically cycle to NVIDIA if Gemini hits 429
+        pass
     elif purpose == "triage":
         # Prefer NVIDIA, else round robin
         nvidia_clients = [c for c in available if c.get("type") == "nvidia"]
@@ -382,98 +380,114 @@ async def agentic_chat(
     Returns:
         Dict with 'message', 'ui_action', and 'payload'.
     """
-    if image_base64:
-        client_info = _get_client(purpose="eco_vision")
-    else:
-        client_info = _get_client(purpose="fan_chat")
     fan_context = fan_context or {}
+    max_retries = 4
+    last_error = None
 
-    if client_info is None:
-        return _mock_agentic_response(message, image_base64)
-
-    try:
-        # Build system prompt with fan context
-        system_prompt = AGENTIC_SYSTEM_PROMPT.format(
-            holder_name=fan_context.get("holder_name", "Fan"),
-            section=fan_context.get("section", "Unknown"),
-            row=fan_context.get("row", "Unknown"),
-            seat_number=fan_context.get("seat_number", "Unknown"),
-            match_id=fan_context.get("match_id", "Unknown"),
-            transit_method=fan_context.get("transit_method", "not set"),
-            needs_accessibility="Yes" if fan_context.get("needs_accessibility") else "No",
-        )
-
-        import json
-        if client_info["type"] == "nvidia":
-            client = client_info["client"]
-            messages = [{"role": "system", "content": system_prompt}]
-            if history:
-                for msg in history[-10:]:
-                    role = "user" if msg.get("role") == "user" else "assistant"
-                    messages.append({"role": role, "content": msg.get("content", "")})
-            messages.append({"role": "user", "content": message})
-            
-            response = client.chat.completions.create(
-                model=client_info["model"],
-                messages=messages,
-                temperature=0.3,
-                max_tokens=500,
-                response_format={"type": "json_object"}
-            )
-            text = response.choices[0].message.content.strip()
+    for attempt in range(max_retries):
+        if image_base64:
+            client_info = _get_client(purpose="eco_vision")
         else:
-            client = client_info["client"]
-            # Build conversation messages
-            contents = [system_prompt]
-    
-            # Add history
-            if history:
-                for msg in history[-10:]:  # Keep last 10 messages for context
-                    role_prefix = "User: " if msg.get("role") == "user" else "Assistant: "
-                    contents.append(role_prefix + msg.get("content", ""))
-    
-            # Add current message
-            contents.append(f"User: {message}")
-    
-            from google.genai import types
-            parts = [types.Part.from_text(text="\n\n".join(contents))]
-    
-            # Add image if provided
-            if image_base64:
-                import base64 as b64
-                if image_base64.startswith("data:image"):
-                    image_base64 = image_base64.split("base64,")[1]
-                image_bytes = b64.b64decode(image_base64)
-                parts.append(types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"))
-    
-            response = client.models.generate_content(
-                model=client_info["model"],
-                contents=[types.Content(parts=parts)],
-                config=types.GenerateContentConfig(
-                    temperature=0.3,
-                    max_output_tokens=500,
-                ),
-            )
-            text = response.text.strip() if response.text else "{}"
-        try:
-            result = _parse_json_response(text)
-        except Exception as je:
-            logger.error(f"Gemini agentic JSON error: {je}. Raw text: {text}")
+            client_info = _get_client(purpose="fan_chat")
+
+        if client_info is None:
             return _mock_agentic_response(message, image_base64)
 
-        # Validate required fields
-        if "message" not in result:
-            result["message"] = "I'm here to help! What do you need?"
-        if "ui_action" not in result:
-            result["ui_action"] = "NONE"
-        if "payload" not in result:
-            result["payload"] = {}
+        try:
+            # Build system prompt with fan context
+            system_prompt = AGENTIC_SYSTEM_PROMPT.format(
+                holder_name=fan_context.get("holder_name", "Fan"),
+                section=fan_context.get("section", "Unknown"),
+                row=fan_context.get("row", "Unknown"),
+                seat_number=fan_context.get("seat_number", "Unknown"),
+                match_id=fan_context.get("match_id", "Unknown"),
+                transit_method=fan_context.get("transit_method", "not set"),
+                needs_accessibility="Yes" if fan_context.get("needs_accessibility") else "No",
+            )
 
-        return result
+            import json
+            if client_info["type"] == "nvidia":
+                client = client_info["client"]
+                messages = [{"role": "system", "content": system_prompt}]
+                if history:
+                    for msg in history[-10:]:
+                        role = "user" if msg.get("role") == "user" else "assistant"
+                        messages.append({"role": role, "content": msg.get("content", "")})
+                messages.append({"role": "user", "content": message})
+                
+                response = client.chat.completions.create(
+                    model=client_info["model"],
+                    messages=messages,
+                    temperature=0.3,
+                    max_tokens=500,
+                    response_format={"type": "json_object"}
+                )
+                text = response.choices[0].message.content.strip()
+            else:
+                client = client_info["client"]
+                # Build conversation messages
+                contents = [system_prompt]
+        
+                # Add history
+                if history:
+                    for msg in history[-10:]:  # Keep last 10 messages for context
+                        role_prefix = "User: " if msg.get("role") == "user" else "Assistant: "
+                        contents.append(role_prefix + msg.get("content", ""))
+        
+                # Add current message
+                contents.append(f"User: {message}")
+        
+                from google.genai import types
+                parts = [types.Part.from_text(text="\n\n".join(contents))]
+        
+                # Add image if provided
+                if image_base64:
+                    import base64 as b64
+                    if image_base64.startswith("data:image"):
+                        image_base64 = image_base64.split("base64,")[1]
+                    image_bytes = b64.b64decode(image_base64)
+                    parts.append(types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"))
+        
+                response = client.models.generate_content(
+                    model=client_info["model"],
+                    contents=[types.Content(parts=parts)],
+                    config=types.GenerateContentConfig(
+                        temperature=0.3,
+                        max_output_tokens=500,
+                    ),
+                )
+                text = response.text.strip() if response.text else "{}"
+                
+            try:
+                result = _parse_json_response(text)
+            except Exception as je:
+                logger.error(f"Gemini agentic JSON error: {je}. Raw text: {text}")
+                # Don't retry on bad JSON, just fallback
+                return _mock_agentic_response(message, image_base64)
 
-    except Exception as e:
-        logger.error(f"Gemini agentic chat error: {e}")
-        return _mock_agentic_response(message, image_base64)
+            # Validate required fields
+            if "message" not in result:
+                result["message"] = "I'm here to help! What do you need?"
+            if "ui_action" not in result:
+                result["ui_action"] = "NONE"
+            if "payload" not in result:
+                result["payload"] = {}
+
+            return result
+
+        except Exception as e:
+            last_error = e
+            error_str = str(e).lower()
+            logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for agentic chat: {e}")
+            
+            # If it's a rate limit or model not found, loop and try the next key
+            if "429" in error_str or "404" in error_str or "503" in error_str or "quota" in error_str or "exhausted" in error_str:
+                continue
+            else:
+                break # Not a rate limit / model issue, so break
+
+    logger.error(f"Gemini agentic chat error after {max_retries} attempts. Last error: {last_error}")
+    return _mock_agentic_response(message, image_base64)
 
 
 def _mock_agentic_response(message: str, image_base64: str = None) -> dict:
