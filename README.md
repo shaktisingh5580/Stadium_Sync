@@ -60,13 +60,18 @@ Stadiums today face three critical failures during mega-events like the World Cu
 - The AI autonomously determines the category (medical, security, maintenance) and severity (low, medium, high, critical).
 - It writes the incident to the database and broadcasts it via WebSocket to the Admin Dashboard in milliseconds.
 
-### 4. Real-Time Command Center (Admin Dashboard)
+### 4. Real-Time Command Center (Admin Dashboard) & CV Webhooks
 - A powerful React dashboard heavily utilizing WebSockets for real-time reactivity.
 - Visualizes live stadium occupancy, predictive congestion alerts (e.g., "Section E2 will hit 85% capacity in 12 mins"), and active incidents.
+- **Computer Vision (CV) Webhooks:** AI-driven simulation of real-time CCTV monitoring. It detects crowd density anomalies and fire/smoke risks, then automatically parses the telemetry (via a robust JSON-extraction layer) to alert the admin with contextualized severity warnings.
 
-### 5. Predictive Egress Routing
+### 5. Dynamic Stadium Map & Intelligent Navigation
+- **Interactive SVG Overlays:** Fans can view a dynamic map where points of interest (washrooms, medical, food) and specific seat sections are highlighted perfectly in sync with backend coordinates.
+- **Flash Sales & Vendor Mapping:** When the admin triggers a flash sale, the fan app dynamically plots an animated, pulsating route directly from the fan's assigned seat to the specific concession stand (e.g., S203 Concessions).
+
+### 6. Predictive Egress Routing
 - Instead of everyone rushing the same gate, the system predicts congestion.
-- The Admin can trigger "Egress" which pushes personalized, safe exit routes to every fan's phone simultaneously at the end of the match, balancing load across all physical gates.
+- The Admin can trigger "Egress" which pushes personalized, safe exit routes (with animated visual map lines) to every fan's phone simultaneously at the end of the match, balancing load across all physical gates.
 
 ---
 
