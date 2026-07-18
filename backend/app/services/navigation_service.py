@@ -92,9 +92,9 @@ async def compute_egress_route(
     best_gate = None
     
     poi_targets = {
-        "washroom": {"name": "Nearest Washroom", "x": 550.0, "y": 250.0},
-        "food_court": {"name": "Nearest Food Court", "x": 250.0, "y": 250.0},
-        "medical": {"name": "Medical Station", "x": 600.0, "y": 400.0}
+        "washroom": {"name": "Nearest Washroom", "x": 363.0, "y": 202.0},
+        "food_court": {"name": "Nearest Food Court", "x": 220.0, "y": 540.0},
+        "medical": {"name": "Medical Station", "x": 510.0, "y": 225.0}
     }
 
     # If a specific target location (like a gate) was requested, use it

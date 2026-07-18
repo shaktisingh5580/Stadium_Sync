@@ -1,4 +1,5 @@
 export interface FanSession {
+  ticket_id?: string;
   ticketId: string;
   section: string;
   seatRow: string;
@@ -8,6 +9,16 @@ export interface FanSession {
   transitMethod: string | null;
   needsAccessibility: boolean;
   token?: string;
+  seat?: {
+    id: string;
+    section_id: string;
+    section_name: string;
+    section_type: string;
+    row: string;
+    number: number;
+    svg_x: number;
+    svg_y: number;
+  };
 }
 
 export interface Point2D {

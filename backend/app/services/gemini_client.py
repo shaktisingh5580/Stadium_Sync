@@ -66,9 +66,10 @@ def _get_client(client_type=None, purpose=None):
         # Images MUST go to Gemini
         available = [c for c in available if c.get("type") == "gemini"]
     elif purpose in ("admin_chat", "fan_chat"):
-        # Use all available clients (Gemini + NVIDIA) for Chat
-        # The retry loop in agentic_chat will automatically cycle to NVIDIA if Gemini hits 429
-        pass
+        # Use only Gemini for chat to ensure near-instant responses
+        gemini_clients = [c for c in available if c.get("type") == "gemini"]
+        if gemini_clients:
+            available = gemini_clients
     elif purpose == "triage":
         # Prefer NVIDIA, else round robin
         nvidia_clients = [c for c in available if c.get("type") == "nvidia"]
@@ -164,14 +165,13 @@ def _parse_json_response(text: str) -> dict:
     import json
     import ast
     text = text.strip()
-    if text.startswith("```"):
-        parts = text.split("\n", 1)
-        if len(parts) > 1:
-            text = parts[1]
-        if "```" in text:
-            text = text.rsplit("```", 1)[0]
-    text = text.strip()
     
+    # Extract json block if there is a preamble
+    if "{" in text and "}" in text:
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        text = text[start:end]
+        
     if not text:
         return {}
         
@@ -611,9 +611,21 @@ Stadium State:
 {stadium_state}
 
 IMPORTANT RULES:
-1. Be concise, professional, and highlight risks.
-2. If crowd density is high, suggest opening overflow gates or dispatching volunteers.
-3. Keep answers under 3 paragraphs.
+1. You MUST respond with ONLY a valid JSON object. Do NOT include markdown code blocks like ```json.
+2. The JSON object must have EXACTLY this structure:
+{{
+  "message": "Your text response to the admin",
+  "action": "NONE" | "BROADCAST",
+  "broadcast_payload": {{
+    "type": "chat_message",
+    "message": "The personalized message sent directly to the fans",
+    "target_ui": "NONE" | "SHOW_MAP" | "SHOW_ROUTE",
+    "target_location": "Gate South"
+  }}
+}}
+3. If the admin asks you to tell fans to evacuate, offer a promotion, or route them somewhere, set action to "BROADCAST".
+4. If "action" is "NONE", you can set "broadcast_payload" to null.
+5. Keep your text message concise, professional, and highlight risks.
 """
 
 async def admin_chat(message: str, stadium_state: dict, history: list = None) -> dict:
@@ -644,13 +656,15 @@ async def admin_chat(message: str, stadium_state: dict, history: list = None) ->
                     messages.append({"role": role, "content": msg.get("content", "")})
             messages.append({"role": "user", "content": message})
             
-            response = client.chat.completions.create(
+            import asyncio
+            response = await asyncio.to_thread(
+                client.chat.completions.create,
                 model=client_info["model"],
                 messages=messages,
                 temperature=0.2,
                 max_tokens=500
             )
-            return {"message": response.choices[0].message.content.strip()}
+            raw_text = response.choices[0].message.content.strip()
         else:
             client = client_info["client"]
             contents = [system_prompt]
@@ -661,17 +675,105 @@ async def admin_chat(message: str, stadium_state: dict, history: list = None) ->
             contents.append(f"User: {message}")
             
             from google.genai import types
-            response = client.models.generate_content(
+            import asyncio
+            response = await asyncio.to_thread(
+                client.models.generate_content,
                 model=client_info["model"],
                 contents=[types.Part.from_text(text="\n\n".join(contents))],
                 config=types.GenerateContentConfig(
                     temperature=0.2,
                     max_output_tokens=500,
+                    response_mime_type="application/json"
                 ),
             )
-            return {"message": response.text.strip()}
+            raw_text = response.text.strip()
+            
+        # Parse JSON
+        try:
+            text = raw_text.strip()
+            
+            # Extract json block if there is a preamble
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
+            elif "{" in text and "}" in text:
+                start = text.find("{")
+                end = text.rfind("}") + 1
+                text = text[start:end]
+            parsed = json.loads(text)
+            return parsed
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Admin AI JSON parse failed: {e}. Raw text: {raw_text}")
+            return {"message": raw_text, "action": "NONE", "broadcast_payload": None}
             
     except Exception as e:
         logger.error(f"Gemini admin chat error: {e}")
         return {"message": f"Error communicating with AI Copilot: {str(e)}"}
 
+# ── CV Event Processing ──
+
+CV_EVENT_PROMPT = """You are the AI Copilot for a Stadium Command Center.
+A Computer Vision (CV) edge node just sent a raw event payload.
+Analyze the event and decide how to alert the admin.
+
+Raw CV Data: {cv_data}
+Current Stadium State: {state_summary}
+
+IMPORTANT: Format the "message" field richly using emojis and bold text (e.g. "🔥 **Fire Alert:** ...", "📊 **Crowd Insight:** ...", "🏃 **Action Taken:** ..."). Be descriptive and professional. Do not use generic fallback text.
+
+Respond ONLY with valid JSON in this exact format. Do NOT wrap it in markdown code blocks.
+{{
+    "action": "ALERT_ADMIN" | "AUTO_RESOLVE",
+    "message": "The richly formatted message to display in the Admin chat",
+    "severity": "critical" | "high" | "medium" | "low"
+}}
+"""
+
+async def process_cv_event(cv_data: dict, state: dict) -> dict:
+    import json
+    client_info = _get_client(purpose="admin_chat")
+    if not client_info:
+        return {"action": "ALERT_ADMIN", "message": f"🚨 CV Alert: {cv_data.get('type')} detected.", "severity": "high"}
+        
+    state_summary = f"Total Incidents: {len(state.get('incidents', []))}"
+    system_prompt = CV_EVENT_PROMPT.format(cv_data=json.dumps(cv_data), state_summary=state_summary)
+    
+    try:
+        if client_info["type"] == "nvidia":
+            client = client_info["client"]
+            import asyncio
+            response = await asyncio.to_thread(
+                client.chat.completions.create,
+                model=client_info["model"],
+                messages=[{"role": "system", "content": system_prompt}],
+                temperature=0.2,
+                max_tokens=300
+            )
+            text = response.choices[0].message.content.strip()
+        else:
+            client = client_info["client"]
+            from google.genai import types
+            import asyncio
+            response = await asyncio.to_thread(
+                client.models.generate_content,
+                model=client_info["model"],
+                contents=[types.Part.from_text(text=system_prompt)],
+                config=types.GenerateContentConfig(temperature=0.2, max_output_tokens=200, response_mime_type="application/json"),
+            )
+            text = response.text.strip()
+            
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0].strip()
+        elif "```" in text:
+            text = text.split("```")[1].split("```")[0].strip()
+        elif "{" in text and "}" in text:
+            start = text.find("{")
+            end = text.rfind("}") + 1
+            text = text[start:end]
+            
+        return json.loads(text)
+    except Exception as e:
+        logger.error(f"Error processing CV event: {e}. Raw output: {text if 'text' in locals() else 'None'}")
+        return {"action": "ALERT_ADMIN", "message": f"🚨 CV Alert: {cv_data.get('type')} detected.", "severity": "high"}

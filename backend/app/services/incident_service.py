@@ -27,7 +27,11 @@ async def create_incident(
     description: str,
     seat_info: dict,
     location_description: Optional[str] = None,
-    image_base64: Optional[str] = None,
+    severity: str = "medium",
+    category: str = "other",
+    ai_triage_result: Optional[dict] = None,
+    suggested_action: Optional[str] = None,
+    image_url: Optional[str] = None,
 ) -> Incident:
     """
     Create a new incident and run AI triage.
@@ -38,10 +42,12 @@ async def create_incident(
     3. Persist incident to the database
     """
     section_name = seat_info.get("section_name", "Unknown")
-    row = seat_info.get("row", "Unknown")
-
+    
     # AI Triage
-    triage = await triage_incident(description, section_name, row)
+    if not ai_triage_result:
+        triage = await triage_incident(description, section_name, seat_info.get("row", "Unknown"))
+    else:
+        triage = ai_triage_result
 
     # Map triage severity string to enum
     severity_map = {
@@ -50,7 +56,7 @@ async def create_incident(
         "high": Severity.HIGH,
         "critical": Severity.CRITICAL,
     }
-    severity = severity_map.get(triage.get("severity", "medium"), Severity.MEDIUM)
+    severity_enum = severity_map.get(triage.get("severity", severity), Severity.MEDIUM)
 
     incident = Incident(
         id=str(uuid.uuid4()),
@@ -58,12 +64,13 @@ async def create_incident(
         section_id=seat_info.get("section_id"),
         description=description,
         location_description=location_description,
-        severity=severity,
+        severity=severity_enum,
         category=triage.get("category", "other"),
         status=IncidentStatus.OPEN,
         ai_triage_result=triage,
         suggested_action=triage.get("suggested_action"),
         estimated_response_mins=triage.get("estimated_response_mins", 10),
+        image_url=image_url,
     )
 
     # Automatically dispatch an available volunteer
@@ -81,7 +88,7 @@ async def create_incident(
     await db.flush()
 
     logger.info(
-        f"Incident created: id={incident.id}, severity={severity.value}, "
+        f"Incident created: id={incident.id}, severity={severity_enum.value}, "
         f"category={triage.get('category')}, section={section_name}"
     )
 

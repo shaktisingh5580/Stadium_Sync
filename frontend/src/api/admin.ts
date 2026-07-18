@@ -58,3 +58,8 @@ export async function resolveIncident(incidentId: string): Promise<{ success: bo
   const response = await apiClient.post<{ success: boolean, message: string }>(`/incidents/${incidentId}/resolve`);
   return response.data;
 }
+
+export async function triggerCVWebhook(data: {type: string, location: string, confidence: number, description: string, image_url?: string}): Promise<any> {
+  const response = await apiClient.post(`/admin/cv-webhook`, data);
+  return response.data;
+}

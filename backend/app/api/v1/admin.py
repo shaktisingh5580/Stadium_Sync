@@ -59,10 +59,13 @@ async def get_admin_state(db: AsyncSession = Depends(get_db)):
 
         incident_data.append({
             "id": inc.id,
+            "ticket_id": inc.ticket_id,
             "severity": inc.severity.value,
             "category": inc.category,
             "status": inc.status.value,
             "description": inc.description,
+            "location_description": inc.location_description,
+            "image_url": inc.image_url,
             "volunteer_name": vol_name
         })
 
@@ -83,6 +86,10 @@ async def chat_with_admin_ai(request: AdminChatRequest, db: AsyncSession = Depen
     
     # Chat with Gemini
     response = await admin_chat(request.message, state, request.history)
+    
+    if response.get("action") == "BROADCAST" and response.get("broadcast_payload"):
+        payload = response["broadcast_payload"]
+        await manager.broadcast_all(payload)
     
     return response
 
@@ -137,3 +144,72 @@ async def evaluate_vendor_promotions(db: AsyncSession = Depends(get_db)):
     await manager.broadcast_all(promotion_payload)
     
     return {"status": "promotions_triggered", "promotion": promotion_payload}
+
+class CVWebhookRequest(BaseModel):
+    type: str
+    location: str
+    confidence: float
+    description: str = ""
+
+@router.post("/cv-webhook")
+async def cv_webhook(request: CVWebhookRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Webhook for Computer Vision edge nodes to report events.
+    """
+    state = await get_admin_state(db)
+    
+    # Release read lock to prevent SQLite deadlocks during long AI API calls
+    await db.commit()
+    
+    # Let AI process the event
+    from app.services.gemini_client import process_cv_event
+    cv_data = request.dict()
+    ai_response = await process_cv_event(cv_data, state)
+    
+    # Update crowd density by ingesting a new high-density snapshot
+    if cv_data['type'] == 'CROWD_CRITICAL':
+        from sqlalchemy import select
+        from app.models.ticket import Section
+        from app.services.crowd_service import ingest_crowd_data
+        
+        section_result = await db.execute(select(Section).where(Section.name == cv_data['location']))
+        section = section_result.scalar_one_or_none()
+        
+        if section:
+            # Ingest 98.5% density to trigger frontend filters
+            await ingest_crowd_data(db, section.id, density_pct=98.5, source="camera")
+    
+    # Create incident in the DB
+    from app.services.incident_service import create_incident
+    
+    ticket_id = "sim-cv-node"
+    image_url = cv_data.get('image_url')
+    
+    incident = await create_incident(
+        db=db,
+        ticket_id=ticket_id,
+        description=f"CV Alert ({cv_data['type']}): {cv_data['description']}",
+        seat_info={"section_name": cv_data['location'], "section_id": "sim-sec"},
+        location_description=cv_data['location'],
+        severity=ai_response.get("severity", "high"),
+        category=ai_response.get("category", "other"),
+        ai_triage_result=ai_response,
+        suggested_action=ai_response.get("action", "NONE"),
+        image_url=image_url
+    )
+    
+    await db.commit()
+    
+    # Broadcast to admins so chat pops up
+    if ai_response.get("action") in ["ALERT_ADMIN", "AUTO_RESOLVE"]:
+        payload = {
+            "type": "chat_message",
+            "role": "assistant",
+            "content": ai_response.get("message", "CV Event Detected.")
+        }
+        if image_url:
+            payload["image"] = image_url
+            
+        await manager.broadcast_to_admins(payload)
+        
+    return {"status": "success", "ai_decision": ai_response}

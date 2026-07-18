@@ -137,7 +137,7 @@ async def predict_crowd_congestion(
         return {"predicted_mins_to_85": None, "trend": "stable"}
 
     # time in minutes since cutoff
-    t_values = [(s.created_at - cutoff).total_seconds() / 60.0 for s in snapshots]
+    t_values = [(s.created_at.replace(tzinfo=timezone.utc) - cutoff).total_seconds() / 60.0 for s in snapshots]
     d_values = [s.density_pct for s in snapshots]
 
     n = len(snapshots)

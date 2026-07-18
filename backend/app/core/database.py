@@ -35,7 +35,7 @@ engine_kwargs = {
 
 if _is_sqlite:
     # SQLite: no pool needed, enable check_same_thread=False
-    engine_kwargs["connect_args"] = {"check_same_thread": False}
+    engine_kwargs["connect_args"] = {"check_same_thread": False, "timeout": 15}
     engine_kwargs["poolclass"] = NullPool
 elif _is_neon:
     # Neon Serverless: NullPool recommended (serverless connections)

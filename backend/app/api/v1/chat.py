@@ -173,19 +173,19 @@ async def chat(
                 logger.error(f"Failed to fetch seat coordinates for SHOW_MAP: {e}")
                 payload["poi"] = {"type": "seat", "name": "Your Seat", "x": 275.0, "y": 132.0}
         elif target == "washroom":
-            payload["poi"] = {"type": "washroom", "name": "Nearest Washroom", "x": 550.0, "y": 250.0}
+            payload["poi"] = {"type": "washroom", "name": "Nearest Washroom", "x": 363.0, "y": 202.0}
         elif target == "food_court":
-            payload["poi"] = {"type": "food_court", "name": "Nearest Food Court", "x": 250.0, "y": 250.0}
+            payload["poi"] = {"type": "food_court", "name": "Nearest Food Court", "x": 220.0, "y": 540.0}
         elif target == "medical":
-            payload["poi"] = {"type": "medical", "name": "Medical Station", "x": 600.0, "y": 400.0}
+            payload["poi"] = {"type": "medical", "name": "Medical Station", "x": 510.0, "y": 225.0}
         elif target == "gate_north":
-            payload["poi"] = {"type": "gate", "name": "North Gate", "x": 400.0, "y": 100.0}
+            payload["poi"] = {"type": "gate", "name": "North Gate", "x": 400.0, "y": 30.0}
         elif target == "gate_south":
-            payload["poi"] = {"type": "gate", "name": "South Gate", "x": 400.0, "y": 700.0}
+            payload["poi"] = {"type": "gate", "name": "South Gate", "x": 400.0, "y": 770.0}
         elif target == "gate_east":
-            payload["poi"] = {"type": "gate", "name": "East Gate", "x": 700.0, "y": 400.0}
+            payload["poi"] = {"type": "gate", "name": "East Gate", "x": 770.0, "y": 400.0}
         elif target == "gate_west":
-            payload["poi"] = {"type": "gate", "name": "West Gate", "x": 100.0, "y": 400.0}
+            payload["poi"] = {"type": "gate", "name": "West Gate", "x": 30.0, "y": 400.0}
 
     # If show route → compute the actual SVG route
     if ui_action == "SHOW_ROUTE":

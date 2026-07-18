@@ -28,6 +28,8 @@ interface ChatData {
   type: 'chat_message';
   role: 'system' | 'user' | 'assistant';
   content: string;
+  target_ui?: 'NONE' | 'SHOW_MAP' | 'SHOW_ROUTE';
+  target_location?: string;
 }
 
 interface RealtimeState {
