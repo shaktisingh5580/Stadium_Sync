@@ -66,10 +66,11 @@ def _get_client(client_type=None, purpose=None):
         # Images MUST go to Gemini
         available = [c for c in available if c.get("type") == "gemini"]
     elif purpose in ("admin_chat", "fan_chat"):
-        # Use only Gemini for chat to ensure near-instant responses
+        # Prefer Gemini for chat but allow Nvidia round-robin to avoid rate limits
         gemini_clients = [c for c in available if c.get("type") == "gemini"]
-        if gemini_clients:
-            available = gemini_clients
+        if gemini_clients and _current_client_idx % 2 == 0:
+            # Send roughly half the traffic to Gemini if available
+            pass
     elif purpose == "triage":
         # Prefer NVIDIA, else round robin
         nvidia_clients = [c for c in available if c.get("type") == "nvidia"]
