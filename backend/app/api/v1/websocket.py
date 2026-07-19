@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/api/v1/websocket.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — WebSocket Endpoint.
 
 Provides real-time updates to connected fans:
@@ -116,21 +126,16 @@ async def websocket_endpoint(
         await websocket.close(code=4001, reason="Missing token")
         return
 
-    is_admin = False
-    if token == "admin-demo-token":
-        is_admin = True
-        ticket_id = f"admin-{id(websocket)}"
-        section_id = None
-    else:
-        try:
-            payload = verify_token(token)
-        except UnauthorizedException:
-            await websocket.close(code=4001, reason="Invalid token")
-            return
+    try:
+        payload = verify_token(token)
+    except UnauthorizedException:
+        await websocket.close(code=4001, reason="Invalid token")
+        return
 
-        ticket_id = payload.get("sub", "unknown")
-        seat = payload.get("seat", {})
-        section_id = seat.get("section_id", "")
+    ticket_id = payload.get("sub", "unknown")
+    seat = payload.get("seat", {})
+    section_id = seat.get("section_id", "")
+    is_admin = payload.get("role") == "admin"
 
     await manager.connect(websocket, ticket_id, section_id, is_admin)
 

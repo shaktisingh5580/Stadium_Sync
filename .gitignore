@@ -40,3 +40,11 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+## Node
+node_modules/
+.cache/
+coverage/
+
+firebase-debug.log
+pglite-debug.log

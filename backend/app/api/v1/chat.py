@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/api/v1/chat.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Chat API Route.
 
 The single agentic endpoint that powers the conversational UI.

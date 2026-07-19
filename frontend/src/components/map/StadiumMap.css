@@ -1,3 +1,14 @@
+/**
+ * Stadium Sync — Stadium Map SVG Styles (StadiumMap.css).
+ *
+ * Defines visual styles for the interactive SVG stadium map:
+ * - Section fill colors with density-based hover states
+ * - Gate markers with transit-type indicators
+ * - Animated egress route path (dash-offset keyframes)
+ * - Pulsing seat position marker with glow effect
+ * - Amenity POI icons and accessibility indicators
+ * - Crowd density color scale (green → yellow → orange → red)
+ */
 
       /* Section styling */
       .section {

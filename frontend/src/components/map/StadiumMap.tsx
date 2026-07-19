@@ -1,3 +1,27 @@
+/**
+ * ============================================================================
+ * File: frontend/src/components/map/StadiumMap.tsx
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Interactive SVG Stadium Map Component.
+ *
+ * Renders a detailed, data-driven SVG map of the stadium that provides:
+ * - Real-time crowd density heatmap (color-coded sections: green → yellow → red)
+ * - Fan seat position highlighting with a pulsing marker
+ * - Animated egress route path rendering (Seat → Concourse → Gate)
+ * - Gate markers with transit method labels (Metro, Bus, Rideshare, Parking)
+ * - Amenity point-of-interest markers (Restrooms, Food, Medical, Water)
+ * - Accessibility route indicators for fans with mobility needs
+ *
+ * The map uses a 800×800 SVG coordinate system with polar-arc routing that
+ * avoids crossing the center pitch area. All coordinates are database-driven.
+ */
 import React from 'react';
 import './StadiumMap.css';
 

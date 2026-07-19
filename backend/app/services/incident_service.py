@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/services/incident_service.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Incident Service.
 
 Handles incident reporting, AI triage, and status tracking.
@@ -13,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.core.exceptions import NotFoundException, ForbiddenException
+from app.core.firebase_runtime import write_operational_event
 from app.models.incident import Incident, IncidentStatus, IncidentUpdate, Severity
 from app.models.ticket import Seat, Section
 from app.services.gemini_client import triage_incident
@@ -93,6 +104,17 @@ async def create_incident(
     )
 
     await manager.broadcast_to_admins({"type": "admin_refresh_required"})
+    await write_operational_event(
+        "incident_created",
+        {
+            "incident_id": incident.id,
+            "ticket_id": incident.ticket_id,
+            "section_id": incident.section_id,
+            "severity": incident.severity,
+            "category": incident.category,
+            "status": incident.status,
+        },
+    )
 
     return incident
 
@@ -115,6 +137,7 @@ async def list_incidents(
     page_size: int = 20,
     status: Optional[str] = None,
     severity: Optional[str] = None,
+    ticket_id: Optional[str] = None,
 ) -> Tuple[List[Incident], int]:
     """
     List incidents with optional filtering and pagination.
@@ -132,6 +155,8 @@ async def list_incidents(
             stmt = stmt.where(Incident.severity == Severity(severity))
         except ValueError:
             pass
+    if ticket_id:
+        stmt = stmt.where(Incident.ticket_id == ticket_id)
 
     # Count
     count_stmt = select(func.count()).select_from(stmt.subquery())

@@ -29,8 +29,10 @@ services:
           name: stadium-sync-cache
           type: redis
           property: connectionURI
-      - key: GEMINI_API_KEY
+      - key: GEMINI_API_KEY_1
         sync: false  # Set manually in Render dashboard
+      - key: TICKET_QR_SIGNING_KEY
+        generateValue: true
       - key: CORS_ORIGINS
         value: '["https://stadium-sync.vercel.app"]'
       - key: IOT_API_KEY

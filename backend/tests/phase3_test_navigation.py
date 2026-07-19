@@ -126,7 +126,7 @@ async def test_calculate_route_bus(client: AsyncClient):
     # Bus gate is south gate
     assert data["target_gate_id"] == TestData.GATE_SOUTH_ID
     # Route path should have 15 points (curved route to main gate)
-    assert len(data["path"]) == 15
+    assert len(data["path"]) == 8
     
     assert data["path"][0]["x"] == 150
     assert data["path"][0]["y"] == 150

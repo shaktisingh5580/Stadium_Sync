@@ -1,6 +1,30 @@
+/**
+ * ============================================================================
+ * File: frontend/src/components/ui/animated-ai-chat.tsx
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Animated AI Chat Interface Component.
+ *
+ * A premium, production-grade chat UI with:
+ * - Framer Motion animated message bubbles with staggered entrance
+ * - Auto-scrolling message list with smooth spring physics
+ * - Typing indicator with pulsing dots during AI response generation
+ * - Image attachment support (camera capture for Eco-Vision / incident photos)
+ * - Markdown rendering for rich AI responses (bold, links, lists)
+ * - Quick-action suggestion chips for common fan queries
+ * - Responsive layout optimized for mobile-first stadium use
+ *
+ * This component is the visual layer for the useChat hook's state management.
+ */
 "use client";
 
-import { useEffect, useRef, useCallback, useTransition } from "react";
+import { useEffect, useRef, useCallback, useMemo, useTransition } from "react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -161,7 +185,7 @@ export function AnimatedAIChat({
     const [inputFocused, setInputFocused] = useState(false);
     const commandPaletteRef = useRef<HTMLDivElement>(null);
 
-    const commandSuggestions: CommandSuggestion[] = [
+    const commandSuggestions = useMemo<CommandSuggestion[]>(() => [
         {
             icon: <QrCode className="w-4 h-4" />,
             label: "Scan Ticket",
@@ -186,7 +210,7 @@ export function AnimatedAIChat({
             description: "Report a problem in your area",
             prefix: "/report"
         },
-    ];
+    ], []);
 
     useEffect(() => {
         if (value.startsWith('/') && !value.includes(' ')) {
@@ -198,7 +222,7 @@ export function AnimatedAIChat({
         } else {
             setShowCommandPalette(false);
         }
-    }, [value]);
+    }, [value, commandSuggestions]);
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
@@ -478,7 +502,7 @@ export function AnimatedAIChat({
                             type="file"
                             accept="image/*"
                             ref={fileInputRef}
-                            className="hidden"
+                            className="hidden" aria-label="Upload image file"
                             onChange={handleFileChange}
                         />
 
@@ -519,7 +543,7 @@ export function AnimatedAIChat({
                                     type="button"
                                     onClick={handleAttachFile}
                                     whileTap={{ scale: 0.94 }}
-                                    className="p-2 text-white/40 hover:text-emerald-400/90 rounded-lg transition-colors relative group"
+                                    className="p-2 text-white/40 hover:text-emerald-400/90 rounded-lg transition-colors relative group" aria-label="Attach image for Eco-Vision or incident report"
                                 >
                                     <Paperclip className="w-4 h-4" />
                                 </motion.button>
@@ -552,7 +576,7 @@ export function AnimatedAIChat({
                                     (value.trim() || attachment) && !isCooldown
                                         ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
                                         : "bg-white/[0.05] text-white/40"
-                                )}
+                                )} aria-label={isCooldown ? 'Please wait before sending' : 'Send message to AI concierge'}
                             >
                                 {isLoading ? (
                                     <LoaderIcon className="w-4 h-4 animate-[spin_2s_linear_infinite]" />

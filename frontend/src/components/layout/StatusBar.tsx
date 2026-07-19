@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * File: frontend/src/components/layout/StatusBar.tsx
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Connection Status Bar Component.
+ *
+ * Shows real-time connection indicators: WebSocket status, current time,
+ * and security badge. Provides visual feedback to fans about their
+ * connection to the stadium's real-time data feeds.
+ */
 import React from 'react';
 import { Wifi, Clock, ShieldCheck } from 'lucide-react';
 

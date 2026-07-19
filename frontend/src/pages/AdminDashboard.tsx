@@ -1,19 +1,51 @@
+/**
+ * ============================================================================
+ * File: frontend/src/pages/AdminDashboard.tsx
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Organizer Command Center (AdminDashboard).
+ *
+ * Full-featured operations dashboard for venue staff and organizers:
+ * - Digital Twin: Real-time stadium visualization with crowd density heatmap
+ * - AI Copilot: Admin-facing Gemini chat with live operational context
+ * - Incident Board: Live feed of AI-triaged incidents with volunteer assignments
+ * - Emergency Controls: One-click evacuation broadcast to all connected fans
+ * - Computer Vision: Simulated CV webhook for testing crowd/safety alerts
+ * - Flash Sales: AI-driven vendor promotion targeting based on crowd flow
+ *
+ * Connects via WebSocket for real-time updates and polls /admin/state for data.
+ * Protected by admin-role JWT authentication.
+ */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ShieldAlert, Users, TrendingUp, Send, Loader2, RefreshCw, AlertTriangle, BadgePercent, Volume2, MapIcon, XIcon, InfoIcon, UserCircle2, UserCheck, Activity, CheckCircle2, Cctv } from 'lucide-react';
 import { getAdminState, sendAdminChat, triggerEvacuation, evaluatePromotions, resolveIncident, triggerCVWebhook } from '@/api/admin';
 import { triggerEgressSimulation } from '@/api';
-import type { AdminState } from '@/api/admin';
+import type { AdminState, Incident } from '@/api/admin';
 import { StadiumMap } from '@/components/map/StadiumMap';
 
 export function AdminDashboard() {
+  const isDemoMode = import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true';
+  
+  if (isDemoMode && !sessionStorage.getItem('stadium_sync_token')) {
+    const demoAdminToken = import.meta.env.VITE_DEMO_ADMIN_TOKEN;
+    if (demoAdminToken) {
+      sessionStorage.setItem('stadium_sync_token', demoAdminToken);
+    }
+  }
 
   const [state, setState] = useState<AdminState | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Floating Overlay States
   const [mapOpen, setMapOpen] = useState(false);
-  const [selectedIncident, setSelectedIncident] = useState<any | null>(null);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 
   // Chat State
   const [chatHistory, setChatHistory] = useState<{role: string, content: string, image?: string}[]>([]);
@@ -45,9 +77,11 @@ export function AdminDashboard() {
     let reconnectTimeout: number;
 
     const connectWebSocket = () => {
+      const token = sessionStorage.getItem('stadium_sync_token');
+      if (!token) return;
       const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
       const wsBase = baseUrl.replace(/^http/, 'ws');
-      ws = new WebSocket(`${wsBase}/ws?token=admin-demo-token`);
+      ws = new WebSocket(`${wsBase}/ws?token=${encodeURIComponent(token)}`);
       
       ws.onopen = () => {
         console.log('Admin WebSocket connected successfully');
@@ -62,8 +96,8 @@ export function AdminDashboard() {
           } else if (msg.type === 'chat_message' && msg.role === 'assistant') {
             setChatHistory(prev => [...prev, { role: 'assistant', content: msg.content }]);
           }
-        } catch (e) {
-          console.error('WebSocket message parsing error', e);
+        } catch {
+          // Ignore malformed WebSocket messages and keep the session alive.
         }
       };
 
@@ -138,8 +172,10 @@ export function AdminDashboard() {
       try {
         await triggerEvacuation("ALL_ZONES");
         await triggerEgressSimulation();
+        alert("✅ Evacuation & Egress Simulation Triggered Successfully!");
+        fetchState(); // Refresh the dashboard state to show any changes
       } catch (e) {
-        alert("Error triggering evacuation!");
+        alert("❌ Error triggering evacuation!");
         console.error(e);
       } finally {
         setEvacuating(false);
@@ -154,7 +190,7 @@ export function AdminDashboard() {
       if (res.status === "promotions_triggered") {
         alert("Flash Sale Generated: " + res.promotion.message);
       }
-    } catch (e) {
+    } catch {
       alert("Error generating promotions.");
     } finally {
       setPromoLoading(false);
@@ -181,7 +217,7 @@ export function AdminDashboard() {
     try {
       const res = await sendAdminChat(msg, chatHistory);
       setChatHistory(prev => [...prev, { role: 'assistant', content: res.message }]);
-    } catch (e) {
+    } catch {
       setChatHistory(prev => [...prev, { role: 'assistant', content: 'Error communicating with AI Copilot.' }]);
     } finally {
       setChatLoading(false);
@@ -221,12 +257,12 @@ export function AdminDashboard() {
             <p className="text-slate-400 text-sm mt-1 font-medium tracking-wide">AI-Powered Operations & Real-Time Monitoring</p>
             <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-semibold tracking-wide">
               <Activity className="w-4 h-4 text-blue-400 animate-pulse" />
-              JUDGES NOTE: Whatever you see is a simulation and AI will behave like this. It is not mock data, just a simulation and all things are real and working.
+              {isDemoMode ? 'SIMULATION MODE: generated events are clearly labelled and never mixed with production data.' : 'LIVE MODE: actions require an authenticated organizer and verified event source.'}
             </div>
           </div>
           
           <div className="flex gap-4">
-            <motion.button 
+            {isDemoMode && <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={runSimulation}
@@ -244,7 +280,7 @@ export function AdminDashboard() {
                   TRIGGER CV SIMULATION
                 </>
               )}
-            </motion.button>
+            </motion.button>}
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -399,6 +435,7 @@ export function AdminDashboard() {
                         "{inc.description}"
                       </p>
                       <button 
+                        aria-label={`Review ${inc.category || 'incident'} details`}
                         onClick={() => setSelectedIncident(inc)}
                         className={`mt-4 w-full text-xs py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-all ${
                           inc.severity === 'critical' ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20' :
@@ -419,6 +456,7 @@ export function AdminDashboard() {
       {/* Floating Action Buttons */}
       <div className="fixed bottom-10 left-10 flex flex-col gap-5 z-50">
         <motion.button 
+          aria-label="Toggle crowd heatmap"
           whileHover={{ scale: 1.1, boxShadow: "0px 0px 20px rgba(52, 211, 153, 0.4)" }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setMapOpen(!mapOpen)} 
@@ -488,6 +526,7 @@ export function AdminDashboard() {
               className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-5 pr-14 py-3.5 text-sm text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-600"
             />
             <button 
+              aria-label="Send message to AI copilot"
               type="submit" 
               disabled={!chatInput.trim() || chatLoading}
               className="absolute right-2 top-2 bottom-2 w-10 flex items-center justify-center bg-blue-600 rounded-lg text-white disabled:opacity-50 hover:bg-blue-500 transition-colors shadow-md"
@@ -524,6 +563,7 @@ export function AdminDashboard() {
               </div>
               
               <button 
+                aria-label="Close heatmap"
                 onClick={() => setMapOpen(false)} 
                 className="absolute top-8 right-8 z-10 p-4 bg-slate-900/90 hover:bg-slate-800 text-slate-300 rounded-full backdrop-blur-xl transition-all border border-slate-700 shadow-2xl hover:scale-110"
               >
@@ -573,6 +613,7 @@ export function AdminDashboard() {
               <div className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none" />
               
               <button 
+                aria-label="Close incident details modal"
                 onClick={() => setSelectedIncident(null)}
                 className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors p-2 bg-slate-800/80 rounded-full hover:bg-slate-700 z-10"
               >
@@ -642,12 +683,14 @@ export function AdminDashboard() {
                     </p>
                     <div className="mt-5 flex gap-3">
                       <button 
+                        aria-label="Close incident details"
                         onClick={() => setSelectedIncident(null)}
                         className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm font-bold transition-all border border-slate-700 hover:scale-[1.02]"
                       >
                         CLOSE
                       </button>
                       <button 
+                        aria-label="Mark incident as resolved"
                         onClick={() => handleResolveIncident(selectedIncident.id)}
                         className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)]"
                       >

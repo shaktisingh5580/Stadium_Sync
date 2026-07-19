@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/core/exceptions.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Custom Exceptions and Error Handlers.
 
 Provides structured JSON error responses across the entire API.

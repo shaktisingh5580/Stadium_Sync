@@ -34,6 +34,9 @@ slowapi==0.1.9
 # ── Utilities ──
 orjson==3.10.18
 
+# ── Firebase / Google Cloud Production Runtime ──
+firebase-admin==6.7.0
+
 # ── Testing ──
 pytest==8.4.1
 pytest-asyncio==1.0.0

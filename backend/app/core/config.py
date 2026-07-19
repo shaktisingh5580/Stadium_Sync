@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/core/config.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Centralized Configuration.
 
 All environment variables are loaded and validated here via pydantic-settings.
@@ -8,7 +18,7 @@ Use `get_settings()` to access the singleton instance.
 from functools import lru_cache
 from typing import List
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,9 +41,22 @@ class Settings(BaseSettings):
     PORT: int = 8000  # Render sets $PORT automatically
 
     # ── Security ──
-    SECRET_KEY: str = "change-me-in-production-use-a-long-random-string"
+    # Secrets intentionally have no usable fallback. Production startup validates them.
+    SECRET_KEY: str = ""
+    TICKET_QR_SIGNING_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_MINUTES: int = 240  # 4 hours per match
+
+    # ── Firebase / Google Cloud ──
+    FIREBASE_AUTH_ENABLED: bool = False
+    FIREBASE_PROJECT_ID: str = ""
+    FIREBASE_APP_CHECK_ENFORCED: bool = False
+    FIRESTORE_EVENT_MIRROR_ENABLED: bool = False
+
+    # Demo fallbacks are useful in local development but must never create
+    # fabricated operational data in a production deployment.
+    ALLOW_AI_MOCK_FALLBACK: bool = False
+    ALLOW_DEMO_FEATURES: bool = False
 
     # ── Database (Neon Serverless PostgreSQL) ──
     DATABASE_URL: str = "sqlite+aiosqlite:///./stadium_sync.db"
@@ -69,11 +92,10 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
-        "*",  # Allow all origins for Vercel preview URLs
     ]
 
     # ── IoT API Key ──
-    IOT_API_KEY: str = "dev-iot-key-change-in-production"
+    IOT_API_KEY: str = ""
 
     # ── Celery (optional) ──
     CELERY_BROKER_URL: str = ""
@@ -85,6 +107,39 @@ class Settings(BaseSettings):
         if info.data.get("REDIS_URL"):
             return True
         return bool(v)
+
+    @model_validator(mode="after")
+    def validate_production_security(self):
+        """Refuse an unsafe production configuration before serving traffic."""
+        if not self.is_production:
+            return self
+
+        errors = []
+        if self.DEBUG:
+            errors.append("DEBUG must be false")
+        if "*" in self.CORS_ORIGINS:
+            errors.append("CORS_ORIGINS cannot contain '*' when APP_ENV is production")
+        if len(self.SECRET_KEY) < 32:
+            errors.append("SECRET_KEY must be at least 32 characters")
+        if len(self.TICKET_QR_SIGNING_KEY) < 32:
+            errors.append("TICKET_QR_SIGNING_KEY must be at least 32 characters")
+        if len(self.IOT_API_KEY) < 32:
+            errors.append("IOT_API_KEY must be at least 32 characters")
+        if not self.FIREBASE_AUTH_ENABLED:
+            errors.append("FIREBASE_AUTH_ENABLED must be true")
+        if not self.FIREBASE_PROJECT_ID:
+            errors.append("FIREBASE_PROJECT_ID is required")
+        if not self.FIREBASE_APP_CHECK_ENFORCED:
+            errors.append("FIREBASE_APP_CHECK_ENFORCED must be true")
+        if not self.FIRESTORE_EVENT_MIRROR_ENABLED:
+            errors.append("FIRESTORE_EVENT_MIRROR_ENABLED must be true")
+        if self.ALLOW_AI_MOCK_FALLBACK:
+            errors.append("ALLOW_AI_MOCK_FALLBACK must be false")
+        if self.ALLOW_DEMO_FEATURES:
+            errors.append("ALLOW_DEMO_FEATURES must be false")
+        if errors:
+            raise ValueError("Unsafe production configuration: " + "; ".join(errors))
+        return self
 
     @property
     def is_production(self) -> bool:

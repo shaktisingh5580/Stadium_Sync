@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/api/v1/egress.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Egress Agent API Routes.
 
 Endpoints:
@@ -12,7 +22,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_fan, get_db
+from app.api.deps import get_current_fan, get_current_user, get_db
 from app.core.config import get_settings
 from app.core.rate_limiter import limiter
 from app.schemas.crowd import EgressAgentStateResponse, EgressTriggerRequest
@@ -40,14 +50,17 @@ router = APIRouter(prefix="/egress", tags=["Egress Agent"])
 async def trigger_egress(
     request: Request,
     body: EgressTriggerRequest,
-    current_user: Dict[str, Any] = Depends(get_current_fan),
+    current_user: Dict[str, Any] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Trigger the egress agent to compute routes for all fans."""
     match_id = current_user.get("match_id", "")
     if not match_id:
-        from app.core.exceptions import BadRequestException
-        raise BadRequestException("No match_id in token")
+        if current_user.get("role") == "admin":
+            match_id = "M2026-QF1"
+        else:
+            from app.core.exceptions import BadRequestException
+            raise BadRequestException("No match_id in token")
 
     agent_state = await trigger_egress_agent(
         db=db,

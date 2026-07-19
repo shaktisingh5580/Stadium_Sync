@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/api/deps.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Dependency Injection.
 
 Provides FastAPI dependencies for:
@@ -8,14 +18,16 @@ Provides FastAPI dependencies for:
 - Redis client
 """
 
+import secrets
 from typing import Any, Dict, Optional
 
-from fastapi import Depends, Header, Query, Request
+from fastapi import Depends, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.database import get_db  # noqa: F401 — re-exported
 from app.core.exceptions import ForbiddenException, UnauthorizedException
+from app.core.firebase_runtime import verify_app_check_token, verify_firebase_id_token
 from app.core.redis_client import get_redis  # noqa: F401 — re-exported
 from app.core.security import verify_token
 
@@ -25,6 +37,7 @@ settings = get_settings()
 async def get_current_user(
     request: Request,
     authorization: Optional[str] = Header(None),
+    firebase_app_check: Optional[str] = Header(None, alias="X-Firebase-AppCheck"),
 ) -> Dict[str, Any]:
     """
     Extract and verify the current user from the JWT token.
@@ -41,18 +54,34 @@ async def get_current_user(
     """
     token = None
 
-    # Try Authorization header first
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ")[1]
-
-    # Fallback to query parameter (WebSocket support)
-    if not token:
-        token = request.query_params.get("token")
+    # Query-string tokens leak easily through logs, history and referrers.
+    # WebSocket authentication is handled only by its dedicated endpoint.
+    if authorization:
+        scheme, _, credentials = authorization.partition(" ")
+        if scheme.lower() == "bearer" and credentials.strip():
+            token = credentials.strip()
 
     if not token:
         raise UnauthorizedException("Missing authentication token")
 
-    payload = verify_token(token)
+    if settings.FIREBASE_AUTH_ENABLED:
+        await verify_app_check_token(firebase_app_check or "")
+        claims = await verify_firebase_id_token(token)
+        role = claims.get("role", "fan")
+        if claims.get("admin") is True:
+            role = "admin"
+        payload = {
+            "sub": claims.get("ticket_id", claims["uid"]),
+            "firebase_uid": claims["uid"],
+            "holder_name": claims.get("name", ""),
+            "match_id": claims.get("match_id", ""),
+            "seat": claims.get("seat", {}),
+            "transit_choice": claims.get("transit_choice"),
+            "needs_accessibility": claims.get("needs_accessibility", False),
+            "role": role,
+        }
+    else:
+        payload = verify_token(token)
 
     # Attach to request state for downstream use
     request.state.current_user = payload
@@ -63,7 +92,17 @@ async def get_current_fan(
     user: Dict[str, Any] = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Ensure the current user is a fan (or any role — fans are default)."""
-    # Fans don't need a special role check; all authenticated users can act as fans
+    if user.get("role") != "fan":
+        raise ForbiddenException("Fan access required")
+    return user
+
+
+async def get_current_staff(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Ensure the current user is an authorized volunteer or organizer."""
+    if user.get("role") not in {"volunteer", "admin"}:
+        raise ForbiddenException("Volunteer or admin access required")
     return user
 
 
@@ -94,7 +133,9 @@ async def verify_api_key(
     """
     if not x_api_key:
         raise UnauthorizedException("Missing X-API-Key header")
-    if x_api_key != settings.IOT_API_KEY:
+    if not settings.IOT_API_KEY or not secrets.compare_digest(
+        x_api_key, settings.IOT_API_KEY
+    ):
         raise UnauthorizedException("Invalid API key")
     return x_api_key
 
@@ -102,12 +143,13 @@ async def verify_api_key(
 async def get_optional_user(
     request: Request,
     authorization: Optional[str] = Header(None),
+    firebase_app_check: Optional[str] = Header(None, alias="X-Firebase-AppCheck"),
 ) -> Optional[Dict[str, Any]]:
     """
     Optionally extract user from JWT. Returns None if no token provided.
     Useful for endpoints that work both authenticated and anonymously.
     """
     try:
-        return await get_current_user(request, authorization)
+        return await get_current_user(request, authorization, firebase_app_check)
     except UnauthorizedException:
         return None

@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/services/gemini_client.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Gemini AI Client.
 
 Wrapper around the Google Gemini API for:
@@ -12,6 +22,7 @@ import logging
 from typing import Optional
 
 from app.core.config import get_settings
+from app.core.exceptions import AIServiceException
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -19,6 +30,14 @@ settings = get_settings()
 # Lazy-initialize the Gemini clients (round-robin)
 _genai_clients = []
 _current_client_idx = 0
+
+
+def _require_mock_fallback_enabled() -> None:
+    """Prevent fabricated AI outcomes from entering production workflows."""
+    if not settings.ALLOW_AI_MOCK_FALLBACK:
+        raise AIServiceException(
+            "AI service is unavailable. No automated operational decision was created."
+        )
 
 
 def _get_client(client_type=None, purpose=None):
@@ -188,6 +207,7 @@ def _parse_json_response(text: str) -> dict:
 
 def _mock_eco_response() -> dict:
     """Fallback mock response when Gemini is unavailable."""
+    _require_mock_fallback_enabled()
     return {
         "category": "recycle",
         "item_name": "plastic bottle",
@@ -288,6 +308,7 @@ async def triage_incident(
 
 def _mock_triage_response(description: str) -> dict:
     """Fallback mock triage when Gemini is unavailable."""
+    _require_mock_fallback_enabled()
     # Simple keyword-based severity
     desc_lower = description.lower()
     if any(w in desc_lower for w in ["medical", "fire", "emergency", "injury", "unconscious"]):
@@ -360,6 +381,7 @@ IMPORTANT RULES:
 2. ALWAYS respond with valid JSON. Never add text outside the JSON.
 3. If unsure about intent, default to ui_action: "NONE" and ask a clarifying question.
 4. For incident reports, always acknowledge urgency and reassure the fan.
+5. MULTILINGUAL ASSISTANCE: Automatically detect the fan's language in their message and respond in the exact same language to provide seamless multilingual assistance for the FIFA World Cup.
 """
 
 
@@ -496,6 +518,7 @@ def _mock_agentic_response(message: str, image_base64: str = None) -> dict:
     Keyword-based fallback when Gemini is unavailable.
     Provides a reasonable experience for demos and testing.
     """
+    _require_mock_fallback_enabled()
     msg_lower = message.lower().strip()
 
     # Image attached → eco-vision
@@ -634,6 +657,7 @@ async def admin_chat(message: str, stadium_state: dict, history: list = None) ->
     client_info = _get_client(purpose="admin_chat")
     
     if not client_info:
+        _require_mock_fallback_enabled()
         return {"message": "Admin AI is in offline mock mode. The stadium looks operational, but AI predictions are disabled."}
 
     try:
@@ -736,6 +760,7 @@ async def process_cv_event(cv_data: dict, state: dict) -> dict:
     import json
     client_info = _get_client(purpose="admin_chat")
     if not client_info:
+        _require_mock_fallback_enabled()
         return {"action": "ALERT_ADMIN", "message": f"🚨 CV Alert: {cv_data.get('type')} detected.", "severity": "high"}
         
     state_summary = f"Total Incidents: {len(state.get('incidents', []))}"

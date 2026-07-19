@@ -1,9 +1,30 @@
+/**
+ * ============================================================================
+ * File: frontend/src/components/layout/Header.tsx
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Application Header Component.
+ *
+ * Displays the Stadium Sync logo, match information, and connection status.
+ * Provides a logout action that clears the JWT session and reloads the app.
+ */
 import React from 'react';
 import { Activity } from 'lucide-react';
 
+/**
+ * Header component displaying the application title and user information.
+ * 
+ * @returns {JSX.Element} The rendered header.
+ */
 export const Header: React.FC = () => {
   return (
-    <header className="h-16 flex items-center justify-between px-6 bg-slate-900/50 border-b border-slate-800 backdrop-blur-md shrink-0">
+    <header role="banner" className="h-16 flex items-center justify-between px-6 bg-slate-900/50 border-b border-slate-800 backdrop-blur-md shrink-0">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-green-500/10 rounded-lg border border-green-500/30">
           <Activity className="w-5 h-5 text-green-400" />
@@ -27,6 +48,16 @@ export const Header: React.FC = () => {
             <p className="text-sm font-medium text-slate-200">Demo Fan</p>
             <p className="text-xs text-slate-400">Sec S204 • Row A • Seat 1</p>
           </div>
+          <button 
+            onClick={() => {
+              sessionStorage.removeItem('stadium_sync_token');
+              sessionStorage.removeItem('stadium_sync_auth_provider');
+              window.location.reload();
+            }}
+            className="ml-4 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 rounded border border-slate-700 transition-colors"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </header>

@@ -1,3 +1,25 @@
+/**
+ * ============================================================================
+ * File: frontend/src/hooks/useRealtime.ts
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Real-Time WebSocket Hook (useRealtime).
+ *
+ * Manages a persistent WebSocket connection to the backend for real-time updates:
+ * - Egress route pushes (personalized exit routes at the 80th minute)
+ * - Emergency evacuation broadcasts (stadium-wide alerts)
+ * - Flash sale notifications (AI-driven vendor promotions)
+ * - Server-pushed chat messages (incident resolution updates)
+ *
+ * Features automatic reconnection with 5-second backoff, 30-second keep-alive
+ * heartbeats, and proper cleanup on component unmount to prevent memory leaks.
+ */
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface EgressData {
@@ -50,10 +72,28 @@ export function useRealtime() {
   });
   
   const wsRef = useRef<WebSocket | null>(null);
+  const heartbeatRef = useRef<number | null>(null);
+  const reconnectRef = useRef<number | null>(null);
+
+  const clearTimers = useCallback(() => {
+    if (heartbeatRef.current !== null) {
+      window.clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
+    }
+    if (reconnectRef.current !== null) {
+      window.clearTimeout(reconnectRef.current);
+      reconnectRef.current = null;
+    }
+  }, []);
 
   const connect = useCallback(() => {
-    const token = localStorage.getItem('stadium_sync_token');
+    const token = sessionStorage.getItem('stadium_sync_token');
     if (!token) return;
+
+    if (reconnectRef.current !== null) {
+      window.clearTimeout(reconnectRef.current);
+      reconnectRef.current = null;
+    }
 
     // Derive WebSocket URL from API base URL
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
@@ -62,11 +102,11 @@ export function useRealtime() {
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log('Real-time WebSocket connected');
       setState(prev => ({ ...prev, isConnected: true }));
       
-      // Keep-alive ping
-      setInterval(() => {
+      // Keep one keep-alive interval per open socket and clear it on close.
+      if (heartbeatRef.current !== null) window.clearInterval(heartbeatRef.current);
+      heartbeatRef.current = window.setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'ping' }));
         }
@@ -76,8 +116,6 @@ export function useRealtime() {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('Real-time event:', data);
-        
         if (data.type === 'egress_route') {
           setState(prev => ({
             ...prev,
@@ -100,21 +138,26 @@ export function useRealtime() {
           }));
         }
         
-      } catch (e) {
-        console.error('Failed to parse WS message', e);
+      } catch {
+        // Ignore malformed messages; the socket remains available for the next update.
       }
     };
 
     ws.onclose = () => {
-      console.log('Real-time WebSocket disconnected');
+      if (heartbeatRef.current !== null) {
+        window.clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
       setState(prev => ({ ...prev, isConnected: false }));
-      
-      // Reconnect after 5 seconds
-      setTimeout(() => connect(), 5000);
+
+      // Reconnect only if this remains the active socket (not after unmount).
+      if (wsRef.current === ws) {
+        wsRef.current = null;
+        reconnectRef.current = window.setTimeout(connect, 5000);
+      }
     };
 
-    ws.onerror = (error) => {
-      console.error('WebSocket Error:', error);
+    ws.onerror = () => {
       ws.close();
     };
 
@@ -124,11 +167,12 @@ export function useRealtime() {
   useEffect(() => {
     connect();
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
+      clearTimers();
+      const socket = wsRef.current;
+      wsRef.current = null;
+      socket?.close();
     };
-  }, [connect]);
+  }, [clearTimers, connect]);
 
   const clearEgressAlert = useCallback(() => {
     setState(prev => ({ ...prev, egressData: null }));

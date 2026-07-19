@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/core/database.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Async Database Engine and Session Management.
 
 Uses SQLAlchemy 2.0 async engine. Supports both PostgreSQL (asyncpg)

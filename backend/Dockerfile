@@ -18,6 +18,9 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 FROM python:3.12-slim AS runner
 
 WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8080
 
 # Copy installed packages from builder
 COPY --from=builder /install /usr/local
@@ -25,8 +28,6 @@ COPY --from=builder /install /usr/local
 # Copy application code
 COPY app/ ./app/
 COPY scripts/ ./scripts/
-# Include pre-populated demo database if it exists
-COPY stadium_sync.db* ./
 
 # Create non-root user for security and give it permissions
 RUN adduser --disabled-password --no-create-home appuser
@@ -34,18 +35,18 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # Expose port (Render sets PORT env var)
-EXPOSE 8000
+EXPOSE 8080
 
 # Health check for Render
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')" || exit 1
+    CMD python -c "import os,urllib.request; urllib.request.urlopen(f'http://localhost:{os.environ.get(\"PORT\",8080)}/api/v1/health')" || exit 1
 
 # Start the application
 # Render sets $PORT; we default to 8000 for local Docker
 CMD uvicorn app.main:app \
     --host 0.0.0.0 \
-    --port ${PORT:-8000} \
-    --workers 2 \
+    --port ${PORT} \
+    --workers 1 \
     --loop uvloop \
     --http httptools \
     --no-access-log

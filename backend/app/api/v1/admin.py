@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/api/v1/admin.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Admin API Router.
 
 Endpoints for the Organizer Command Center.
@@ -6,11 +16,12 @@ Endpoints for the Organizer Command Center.
 
 import random
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
-from app.api.deps import get_db
+from app.api.deps import get_current_admin, get_db, verify_api_key
 from app.models.ticket import Stadium
 from app.models.incident import Incident
 from app.services.crowd_service import get_stadium_crowd_map
@@ -28,12 +39,15 @@ class EvacuateRequest(BaseModel):
     hazard_zone: Optional[str] = None
 
 @router.get("/state")
-async def get_admin_state(db: AsyncSession = Depends(get_db)):
+async def get_admin_state(
+    db: AsyncSession = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin),
+):
     """
     Get the digital twin stadium state (incidents + crowd + predictions).
     """
     # Grab the first stadium for demo purposes
-    stmt = select(Stadium).limit(1)
+    stmt = select(Stadium).options(selectinload(Stadium.sections)).limit(1)
     result = await db.execute(stmt)
     stadium = result.unique().scalar_one_or_none()
 
@@ -77,7 +91,11 @@ async def get_admin_state(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/chat")
-async def chat_with_admin_ai(request: AdminChatRequest, db: AsyncSession = Depends(get_db)):
+async def chat_with_admin_ai(
+    request: AdminChatRequest,
+    db: AsyncSession = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin),
+):
     """
     Chat with the Admin Copilot using the live stadium state.
     """
@@ -94,7 +112,11 @@ async def chat_with_admin_ai(request: AdminChatRequest, db: AsyncSession = Depen
     return response
 
 @router.post("/evacuate")
-async def trigger_emergency_evacuation(request: EvacuateRequest, db: AsyncSession = Depends(get_db)):
+async def trigger_emergency_evacuation(
+    request: EvacuateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin),
+):
     """
     Trigger a stadium-wide emergency evacuation.
     Broadcasts specialized egress routes to all fans.
@@ -108,7 +130,10 @@ async def trigger_emergency_evacuation(request: EvacuateRequest, db: AsyncSessio
     return {"status": "evacuation_triggered"}
 
 @router.post("/evaluate-promotions")
-async def evaluate_vendor_promotions(db: AsyncSession = Depends(get_db)):
+async def evaluate_vendor_promotions(
+    db: AsyncSession = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin),
+):
     """
     Simulates AI analyzing crowd densities to trigger flash sales at underutilized vendors.
     """
@@ -146,20 +171,23 @@ async def evaluate_vendor_promotions(db: AsyncSession = Depends(get_db)):
     return {"status": "promotions_triggered", "promotion": promotion_payload}
 
 class CVWebhookRequest(BaseModel):
-    type: str
-    location: str
-    confidence: float
-    description: str = ""
+    type: str = Field(..., pattern="^(CROWD_CRITICAL|SECURITY_BREACH|MEDICAL_EMERGENCY)$")
+    location: str = Field(..., max_length=100)
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    description: str = Field("", max_length=500)
 
 @router.post("/cv-webhook")
-async def cv_webhook(request: CVWebhookRequest, db: AsyncSession = Depends(get_db)):
+async def cv_webhook(
+    request: CVWebhookRequest,
+    db: AsyncSession = Depends(get_db),
+    api_key: str = Depends(verify_api_key),
+):
     """
     Webhook for Computer Vision edge nodes to report events.
     """
     state = await get_admin_state(db)
     
-    # Release read lock to prevent SQLite deadlocks during long AI API calls
-    await db.commit()
+    # Let AI process the event without holding unnecessary locks
     
     # Let AI process the event
     from app.services.gemini_client import process_cv_event

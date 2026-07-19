@@ -1,3 +1,21 @@
+/**
+ * ============================================================================
+ * File: frontend/src/components/sidebar/Sidebar.tsx
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Sidebar Navigation Component.
+ *
+ * Provides tabbed navigation between the fan utility panels:
+ * Transit (transportation preferences), Incident (issue reporting),
+ * and Eco-Vision (AI waste classification camera). Uses TabButton
+ * components for accessible, animated tab switching.
+ */
 import React, { useState } from 'react';
 import { TabButton } from '../shared/TabButton';
 import { TransitPanel } from './TransitPanel';

@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/schemas/auth.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Auth Schemas.
 
 Pydantic models for QR ticket scanning, JWT session, and token management.
@@ -68,6 +78,7 @@ class QRScanResponse(BaseModel):
     token_type: str = "bearer"
     expires_at: datetime
     fan: FanSession
+    firebase_custom_token: Optional[str] = None
 
 
 class MeResponse(BaseModel):

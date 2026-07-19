@@ -1,3 +1,23 @@
+/**
+ * ============================================================================
+ * File: frontend/src/components/ui/message-bubble.tsx
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Chat Message Bubble Component.
+ *
+ * Renders individual chat messages with role-based styling:
+ * - User messages: Right-aligned with primary accent color
+ * - Assistant messages: Left-aligned with neutral background and AI avatar
+ * - System messages: Centered with muted styling
+ *
+ * Uses Framer Motion for entrance animations and supports markdown content.
+ */
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';

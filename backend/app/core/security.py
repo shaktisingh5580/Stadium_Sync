@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/core/security.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — JWT Security Utilities.
 
 Handles JWT token creation, verification, and password hashing.
@@ -85,7 +95,6 @@ def verify_token(token: str) -> Dict[str, Any]:
             token,
             settings.SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
-            options={"verify_exp": False},
         )
 
         # Ensure required fields exist

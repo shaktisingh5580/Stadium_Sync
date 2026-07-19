@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/api/v1/incidents.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Incident API Routes.
 
 Endpoints:
@@ -13,7 +23,8 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_fan, get_current_volunteer, get_db
+from app.api.deps import get_current_fan, get_current_staff, get_current_user, get_db
+from app.core.exceptions import ForbiddenException
 from app.core.config import get_settings
 from app.core.rate_limiter import limiter
 from app.schemas.incident import (
@@ -61,7 +72,7 @@ async def report_incident(
         description=body.description,
         seat_info=seat_info,
         location_description=body.location_description,
-        image_base64=body.image_base64,
+        image_url=body.image_base64,
     )
 
     # Auto-dispatch for high/critical severity
@@ -107,11 +118,18 @@ async def list_all_incidents(
     page_size: int = Query(20, ge=1, le=100),
     status: Optional[str] = Query(None),
     severity: Optional[str] = Query(None),
-    current_user: Dict[str, Any] = Depends(get_current_fan),
+    current_user: Dict[str, Any] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """List incidents with pagination and filters."""
-    incidents, total = await list_incidents(db, page, page_size, status, severity)
+    role = current_user.get("role")
+    if role not in {"fan", "volunteer", "admin"}:
+        raise ForbiddenException("Authenticated stadium role required")
+    # Fans may review only their own reports; staff see the operational queue.
+    ticket_id = current_user["sub"] if role == "fan" else None
+    incidents, total = await list_incidents(
+        db, page, page_size, status, severity, ticket_id=ticket_id
+    )
 
     items = [
         IncidentResponse(
@@ -153,11 +171,13 @@ async def list_all_incidents(
 async def get_incident_detail(
     request: Request,
     incident_id: str,
-    current_user: Dict[str, Any] = Depends(get_current_fan),
+    current_user: Dict[str, Any] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get details for a specific incident."""
     incident = await get_incident(db, incident_id)
+    if current_user.get("role") == "fan" and incident.ticket_id != current_user["sub"]:
+        raise ForbiddenException("Fans can view only their own incident reports")
 
     return {
         "success": True,
@@ -190,7 +210,7 @@ async def get_incident_detail(
 async def manual_dispatch(
     request: Request,
     incident_id: str,
-    current_user: Dict[str, Any] = Depends(get_current_fan),
+    current_user: Dict[str, Any] = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
     """Manually dispatch a volunteer to an incident."""
@@ -228,6 +248,7 @@ async def manual_dispatch(
 async def resolve_incident_endpoint(
     request: Request,
     incident_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
     """Resolve an incident and free the assigned volunteer."""
@@ -250,7 +271,7 @@ async def resolve_incident_endpoint(
             db.add(vol)
             
     db.add(incident)
-    await db.commit()
+    # db.commit() is handled automatically by the get_db dependency
     
     # Notify admin dashboard to refresh
     await manager.broadcast_to_admins({"type": "admin_refresh_required"})

@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/services/ticket_service.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Ticket Service.
 
 Handles QR code decoding, ticket validation, and fan session creation.
@@ -12,6 +22,7 @@ QR Payload Format (JSON):
 """
 
 import hashlib
+import hmac
 import json
 import logging
 from typing import Any, Dict, Optional
@@ -25,10 +36,12 @@ from app.core.exceptions import (
     ForbiddenException,
     NotFoundException,
 )
+from app.core.config import get_settings
 from app.models.ticket import Seat, Section, Ticket
 from app.schemas.auth import FanSession, SeatInfo
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 
 def decode_qr_payload(raw_payload: str) -> Dict[str, Any]:
@@ -36,7 +49,7 @@ def decode_qr_payload(raw_payload: str) -> Dict[str, Any]:
     Decode and validate the raw QR code payload.
 
     Expected format: JSON string with ticket_id, match_id, checksum.
-    The checksum is a simple SHA256(ticket_id + match_id + "stadium-sync-salt")[:12]
+    The checksum is an HMAC signature derived from a server-side signing key.
 
     Args:
         raw_payload: Raw string from QR code scanner.
@@ -81,9 +94,10 @@ def decode_qr_payload(raw_payload: str) -> Dict[str, Any]:
 
 def _compute_checksum(ticket_id: str, match_id: str) -> str:
     """Compute the expected checksum for a ticket."""
-    salt = "stadium-sync-salt-2026"
-    raw = f"{ticket_id}:{match_id}:{salt}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:12]
+    raw = f"{ticket_id}:{match_id}".encode()
+    return hmac.new(
+        settings.TICKET_QR_SIGNING_KEY.encode(), raw, hashlib.sha256
+    ).hexdigest()[:12]
 
 
 def generate_qr_payload(ticket_id: str, match_id: str) -> str:

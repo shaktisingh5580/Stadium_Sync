@@ -243,7 +243,7 @@ async def test_full_e2e_incident_lifecycle(client: AsyncClient):
     # 2. Manual dispatch (in case auto-dispatch already used the volunteer)
     dispatch_resp = await client.post(
         f"/api/v1/incidents/{incident_id}/dispatch",
-        headers={"Authorization": f"Bearer {fan_token}"},
+        headers={"Authorization": f"Bearer {vol_token}"},
     )
     assert dispatch_resp.status_code == 200
 

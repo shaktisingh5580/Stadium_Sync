@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/models/crowd.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Crowd Density and Egress Route Models.
 
 Tracks real-time crowd snapshots from IoT sensors and computed exit routes.

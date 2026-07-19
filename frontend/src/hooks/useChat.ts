@@ -1,3 +1,24 @@
+/**
+ * ============================================================================
+ * File: frontend/src/hooks/useChat.ts
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Chat State Hook (useChat).
+ *
+ * Manages the conversational state between the fan and the Gemini AI concierge:
+ * - Persists chat history to sessionStorage for session continuity.
+ * - Sends messages to the /chat endpoint with full conversation history for context.
+ * - Handles Gemini's UI action directives (SHOW_MAP, SHOW_ROUTE, etc.) which drive
+ *   the frontend's agentic behavior — the AI can trigger map views, route displays,
+ *   eco-vision results, and incident dispatches through natural language.
+ * - Provides graceful error handling with user-friendly fallback messages.
+ */
 import { useState, useCallback, useEffect } from 'react';
 import { sendChatMessage } from '@/api';
 
@@ -8,12 +29,12 @@ export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
   uiAction?: UiAction;
-  payload?: any;
+  payload?: Record<string, unknown>;
 }
 
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const saved = localStorage.getItem('stadium_chat_history');
+    const saved = sessionStorage.getItem('stadium_chat_history');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -27,7 +48,7 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('stadium_chat_history', JSON.stringify(messages));
+    sessionStorage.setItem('stadium_chat_history', JSON.stringify(messages));
   }, [messages]);
 
   const sendMessage = useCallback(async (content: string, imageBase64?: string) => {

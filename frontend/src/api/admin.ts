@@ -1,3 +1,24 @@
+/**
+ * ============================================================================
+ * File: frontend/src/api/admin.ts
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Admin / Organizer API Functions.
+ *
+ * Provides typed API calls for the Organizer Command Center (AdminDashboard):
+ * - getAdminState — Fetches the digital twin state (incidents + crowd heatmap + predictions)
+ * - sendAdminChat — Chats with the Admin Copilot AI using live stadium context
+ * - triggerEvacuation — Broadcasts an emergency evacuation to all connected fans
+ * - evaluatePromotions — AI-driven flash sale targeting based on crowd density
+ * - resolveIncident — Marks an incident as resolved
+ * - triggerCVWebhook — Simulates a Computer Vision edge-node event
+ */
 import { apiClient } from './client';
 
 export interface Incident {
@@ -6,6 +27,20 @@ export interface Incident {
   category: string;
   status: string;
   description: string;
+  ticket_id?: string;
+  location_description?: string;
+  image_url?: string;
+  volunteer_name?: string;
+}
+
+export interface ChatMessage {
+  role: string;
+  content: string;
+}
+
+export interface Promotion {
+  message?: string;
+  [key: string]: unknown;
 }
 
 export interface CrowdSection {
@@ -39,7 +74,7 @@ export async function getAdminState(): Promise<AdminState> {
   return response.data;
 }
 
-export async function sendAdminChat(message: string, history: any[] = []): Promise<{ message: string }> {
+export async function sendAdminChat(message: string, history: ChatMessage[] = []): Promise<{ message: string }> {
   const response = await apiClient.post<{ message: string }>('/admin/chat', { message, history });
   return response.data;
 }
@@ -49,7 +84,7 @@ export async function triggerEvacuation(hazardZone?: string): Promise<{ status: 
   return response.data;
 }
 
-export async function evaluatePromotions(): Promise<{ status: string, promotion?: any, message?: string }> {
+export async function evaluatePromotions(): Promise<{ status: string, promotion?: Promotion, message?: string }> {
   const response = await apiClient.post('/admin/evaluate-promotions');
   return response.data;
 }
@@ -59,7 +94,7 @@ export async function resolveIncident(incidentId: string): Promise<{ success: bo
   return response.data;
 }
 
-export async function triggerCVWebhook(data: {type: string, location: string, confidence: number, description: string, image_url?: string}): Promise<any> {
+export async function triggerCVWebhook(data: {type: string, location: string, confidence: number, description: string, image_url?: string}): Promise<Record<string, unknown>> {
   const response = await apiClient.post(`/admin/cv-webhook`, data);
   return response.data;
 }

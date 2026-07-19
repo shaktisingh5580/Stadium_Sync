@@ -1,3 +1,25 @@
+/**
+ * ============================================================================
+ * File: frontend/src/types/index.ts
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Shared TypeScript Type Definitions.
+ *
+ * Defines the core domain interfaces used across the frontend:
+ * - FanSession: Authenticated fan's ticket, seat, and accessibility profile
+ * - Point2D / EgressRoute: SVG map coordinate system and egress path data
+ * - EcoVisionResult: AI waste classification output (Gemini Vision)
+ * - IncidentReport: Fan-reported issue with AI triage metadata
+ * - CrowdSection / StadiumCrowdMap: Real-time crowd density heatmap data
+ *
+ * These types mirror the backend Pydantic schemas for end-to-end type safety.
+ */
 export interface FanSession {
   ticket_id?: string;
   ticketId: string;

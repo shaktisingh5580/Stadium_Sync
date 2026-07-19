@@ -1,3 +1,9 @@
+/**
+ * Stadium Sync — App Component Styles (App.css).
+ *
+ * Page-level layout and animation styles for the root App component,
+ * including QR scanner transitions, loading screens, and counter displays.
+ */
 .counter {
   font-size: 16px;
   padding: 5px 10px;

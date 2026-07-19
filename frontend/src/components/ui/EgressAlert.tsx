@@ -1,3 +1,24 @@
+/**
+ * ============================================================================
+ * File: frontend/src/components/ui/EgressAlert.tsx
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Egress Alert Overlay Component.
+ *
+ * Displays a full-screen animated notification when the egress agent pushes
+ * a personalized exit route to the fan (typically at the 80th match minute).
+ * Shows the assigned gate, estimated walking time, and a "Show Route" button
+ * that triggers the map view with the animated path.
+ *
+ * Also used for emergency evacuation broadcasts with a critical visual style.
+ * Uses Framer Motion for attention-grabbing slide-in animation.
+ */
 import { motion } from 'framer-motion';
 import { AlertTriangle, ArrowRightCircle } from 'lucide-react';
 
@@ -13,7 +34,7 @@ export function EgressAlert({ message, gateName, onAcknowledge }: EgressAlertPro
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md"
+      className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md" role="alertdialog" aria-label="Egress route notification" aria-live="assertive"
     >
       <motion.div 
         initial={{ scale: 0.9, y: 20 }}
@@ -48,6 +69,7 @@ export function EgressAlert({ message, gateName, onAcknowledge }: EgressAlertPro
         </div>
 
         <button 
+          aria-label="View escape route"
           onClick={onAcknowledge}
           className="relative z-10 flex items-center gap-2 px-8 py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-lg transition-colors w-full justify-center group shadow-lg shadow-red-900"
         >

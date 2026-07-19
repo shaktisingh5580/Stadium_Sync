@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/middleware/logging_mw.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Structured Request Logging Middleware.
 
 Logs every request with method, path, status, and duration.

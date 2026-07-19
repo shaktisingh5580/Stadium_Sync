@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/services/crowd_service.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Crowd Density Service.
 
 Handles ingestion of crowd density data from IoT sensors and
@@ -14,6 +24,7 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundException, BadRequestException
+from app.core.firebase_runtime import write_operational_event
 from app.models.crowd import (
     CrowdSnapshot,
     CrowdSource,
@@ -36,22 +47,6 @@ def classify_density(pct: float) -> DensityLevel:
         return DensityLevel.HIGH
     else:
         return DensityLevel.CRITICAL
-
-def synthesize_acoustic_sentiment(density_pct: float, trend: str, section_name: str) -> tuple[float, str]:
-    """Mock an acoustic/audio sentiment analysis based on crowd physics."""
-    if density_pct >= 85:
-        if trend == "increasing":
-            return -0.8, "TENSE"
-        return -0.4, "RESTLESS"
-    elif density_pct >= 60:
-        if "N" in section_name or "S" in section_name:  # Home/Away ends
-            return 0.9, "CHEERING"
-        return 0.6, "LIVELY"
-    elif density_pct > 20:
-        return 0.1, "CALM"
-    else:
-        return 0.0, "SILENT"
-
 
 async def ingest_crowd_data(
     db: AsyncSession,
@@ -108,6 +103,17 @@ async def ingest_crowd_data(
 
     # Notify admin dashboards
     await manager.broadcast_to_admins({"type": "admin_refresh_required"})
+    await write_operational_event(
+        "crowd_snapshot_ingested",
+        {
+            "snapshot_id": snapshot.id,
+            "stadium_id": snapshot.stadium_id,
+            "section_id": snapshot.section_id,
+            "density_pct": snapshot.density_pct,
+            "density_level": snapshot.density_level,
+            "source": snapshot.source,
+        },
+    )
 
     return snapshot
 
@@ -215,8 +221,6 @@ async def get_stadium_crowd_map(
 
         prediction = await predict_crowd_congestion(db, section.id)
         trend = prediction.get("trend") or "stable"
-        sentiment_score, acoustic_status = synthesize_acoustic_sentiment(density_pct, trend, section.name)
-
         section_data.append(CrowdDensityResponse(
             section_id=section.id,
             section_name=section.name,
@@ -225,8 +229,10 @@ async def get_stadium_crowd_map(
             timestamp=ts,
             predicted_mins_to_85=prediction.get("predicted_mins_to_85"),
             trend=trend,
-            sentiment_score=sentiment_score,
-            acoustic_status=acoustic_status,
+            # Audio sentiment requires a separately authenticated source. Never
+            # manufacture a crowd mood from density in a production dashboard.
+            sentiment_score=None,
+            acoustic_status=None,
         ))
 
     total_pct = (total_occupancy / total_capacity * 100) if total_capacity > 0 else 0

@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/schemas/volunteer.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Volunteer Schemas.
 
 Pydantic models for volunteer management and dispatch.

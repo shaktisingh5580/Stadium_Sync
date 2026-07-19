@@ -1,3 +1,21 @@
+/**
+ * ============================================================================
+ * File: frontend/src/components/sidebar/TransitPanel.tsx
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — Transit Method Selection Panel.
+ *
+ * Allows fans to select their transportation preference (Metro, Bus, Rideshare, Parking).
+ * The choice is persisted via the /navigation/transit API and used by the egress agent
+ * to compute the optimal exit gate closest to the fan's chosen transit stop.
+ * Updates trigger a map re-render showing the corresponding gate highlighted.
+ */
 import React, { useState } from 'react';
 import { GlowCard } from '../shared/GlowCard';
 import { GlowButton } from '../shared/GlowButton';
@@ -14,7 +32,7 @@ export const TransitPanel: React.FC<TransitPanelProps> = ({ session, onUpdateTra
   const [selected, setSelected] = useState<string | null>(session.transitMethod);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [routeData, setRouteData] = useState<any>(null);
+  const [routeData, setRouteData] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const transitOptions = [
@@ -33,7 +51,7 @@ export const TransitPanel: React.FC<TransitPanelProps> = ({ session, onUpdateTra
       const route = await fetchEgressRoute();
       setRouteData(route);
       onUpdateTransit(selected);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || 'Failed to generate route.');
     } finally {
       setIsLoading(false);

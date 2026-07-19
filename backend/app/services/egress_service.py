@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/services/egress_service.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — Egress Agent Service.
 
 The egress agent is triggered at the 80th minute of a match.

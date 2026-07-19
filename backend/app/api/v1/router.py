@@ -1,4 +1,14 @@
 """
+===============================================================================
+File: backend/app/api/v1/router.py
+Purpose: Core Backend Application Module.
+Architecture: FastAPI backend module.
+Inputs: standard API requests or internal service calls.
+Outputs: structured responses/models.
+Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+===============================================================================
+"""
+"""
 Stadium Sync — V1 API Router Aggregator.
 
 Includes all v1 route modules with their prefixes and tags.

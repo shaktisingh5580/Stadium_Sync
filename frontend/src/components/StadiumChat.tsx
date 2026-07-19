@@ -1,3 +1,28 @@
+/**
+ * ============================================================================
+ * File: frontend/src/components/StadiumChat.tsx
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — StadiumChat (Primary Fan Interface).
+ *
+ * The central hub of the fan experience, combining:
+ * - AI Chat: A Gemini-powered conversational concierge that handles navigation,
+ *   accessibility queries, multilingual assistance, and eco-vision waste classification.
+ * - Stadium Map: An interactive SVG-based map with real-time crowd density heatmap,
+ *   seat highlighting, and animated egress route rendering.
+ * - Sidebar Panels: Transit method selection, incident reporting, and eco-vision camera.
+ * - Real-Time Alerts: WebSocket-driven egress notifications, emergency evacuations,
+ *   flash sale promotions, and incident resolution updates.
+ *
+ * This component orchestrates state across useChat, useRealtime, and the API layer
+ * to deliver a cohesive, responsive, and accessible fan experience.
+ */
 import React, { useState, useEffect } from 'react';
 import { AnimatedAIChat } from './ui/animated-ai-chat';
 import { useChat } from '@/hooks/useChat';
@@ -11,7 +36,15 @@ import { triggerEgressSimulation } from '@/api';
 import { fetchFanSession } from '@/api';
 import type { FanSession } from '@/types';
 
+/**
+ * StadiumChat component is the main container for the Fan Persona interface.
+ * It handles the chat interaction, realtime map routing, emergency egress alerts,
+ * and flash sale notifications using WebSockets and the Gemini AI backend.
+ * 
+ * @returns {JSX.Element} The rendered StadiumChat layout.
+ */
 export const StadiumChat: React.FC = () => {
+  const isDemoMode = import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true';
   const { messages, sendMessage, addMessage, isLoading } = useChat();
   const { isConnected, egressData, emergencyData, flashData, chatData, clearEgressAlert, clearFlashAlert, clearChatAlert, clearEmergencyAlert } = useRealtime();
   const [mapVisible, setMapVisible] = useState(false);
@@ -74,19 +107,34 @@ export const StadiumChat: React.FC = () => {
 
   // Handle emergency egress automatically
   useEffect(() => {
-    if (emergencyData && egressData) {
-      setMapVisible(true);
-      setActiveRoute(egressData.path);
-      setActiveSeat(egressData.path[0]);
-      addMessage({
-        role: 'system',
-        content: `EMERGENCY EVACUATE, LEAVE THE STADIUM IMMEDIATELY. Your optimal route to ${egressData.target_gate_name} has been displayed on the map.`,
-        uiAction: 'SHOW_ROUTE'
-      });
-      clearEgressAlert();
+    if (emergencyData) {
+      if (egressData) {
+        setMapVisible(true);
+        setActiveRoute(egressData.path);
+        setActiveSeat(egressData.path[0]);
+        addMessage({
+          role: 'system',
+          content: `EMERGENCY EVACUATE, LEAVE THE STADIUM IMMEDIATELY. Your optimal route to ${egressData.target_gate_name} has been displayed on the map.`,
+          uiAction: 'SHOW_ROUTE',
+          payload: {
+            route: { path: egressData.path }
+          }
+        });
+        clearEgressAlert();
+      } else {
+        addMessage({
+          role: 'system',
+          content: `EMERGENCY EVACUATION. PLEASE PROCEED TO THE NEAREST SAFE EXIT IMMEDIATELY.`,
+          uiAction: 'SHOW_MAP',
+          payload: session?.seat ? {
+            target: 'seat',
+            seat_coordinates: { x: session.seat.svg_x, y: session.seat.svg_y }
+          } : undefined
+        });
+      }
       clearEmergencyAlert();
     }
-  }, [emergencyData, egressData, addMessage, clearEgressAlert, clearEmergencyAlert]);
+  }, [emergencyData, egressData, addMessage, clearEgressAlert, clearEmergencyAlert, session]);
 
   // Parse UI Actions from the latest message
   useEffect(() => {
@@ -179,10 +227,10 @@ export const StadiumChat: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-slate-950 flex flex-col md:flex-row">
+    <div className="relative w-full h-full overflow-hidden bg-slate-950 flex flex-col md:flex-row" role="region" aria-label="Stadium fan experience interface">
       
       {/* Main Chat Interface */}
-      <div className={`w-full h-full flex flex-col items-center justify-center p-4 transition-all duration-500 ${mapVisible && !isMobile ? 'md:w-1/2' : ''}`}>
+      <div role="region" aria-label="AI concierge chat" className={`w-full h-full flex flex-col items-center justify-center p-4 transition-all duration-500 ${mapVisible && !isMobile ? 'md:w-1/2' : ''}`}>
         <div className="h-full w-full max-w-4xl flex flex-col items-center justify-center">
           <AnimatedAIChat 
             messages={messages}
@@ -205,6 +253,7 @@ export const StadiumChat: React.FC = () => {
           >
             {/* Floating Close Button */}
             <button 
+              aria-label="Close Map"
               onClick={() => setMapVisible(false)}
               className="absolute top-4 right-4 z-[60] bg-slate-900/80 hover:bg-slate-800 text-white rounded-full p-3 transition-all flex items-center justify-center cursor-pointer shadow-lg border border-white/10"
               title="Close Map"
@@ -213,7 +262,7 @@ export const StadiumChat: React.FC = () => {
             </button>
 
             {/* Map Container */}
-            <div className="flex-1 w-full h-full flex items-center justify-center relative overflow-hidden">
+            <div role="img" aria-label="Interactive stadium map showing sections, gates, and navigation routes" className="flex-1 w-full h-full flex items-center justify-center relative overflow-hidden">
               {/* Scaled Map - adjusted for full-screen overlay on different devices */}
               <div className="w-[800px] h-[800px] origin-center scale-[0.4] sm:scale-[0.5] md:scale-[0.65] lg:scale-[0.8] flex-shrink-0 relative">
                 <StadiumMap 
@@ -252,8 +301,11 @@ export const StadiumChat: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
             className="absolute bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[80] w-[90%] max-w-sm bg-gradient-to-br from-emerald-500 to-teal-700 text-white p-5 rounded-2xl shadow-2xl border border-emerald-400/50"
+            role="alert"
+            aria-live="assertive"
           >
             <button 
+              aria-label="Dismiss flash sale alert"
               onClick={clearFlashAlert}
               className="absolute top-3 right-3 p-1.5 bg-black/20 hover:bg-black/40 rounded-full transition-colors cursor-pointer"
             >
@@ -270,6 +322,7 @@ export const StadiumChat: React.FC = () => {
             </div>
             <p className="text-sm mb-4 text-white/90 leading-relaxed">{flashData.message}</p>
             <button 
+              aria-label="Route to flash sale"
               onClick={() => {
                 clearFlashAlert();
                 sendMessage(`Route me to ${flashData.vendor_name} for the flash sale!`);
@@ -287,6 +340,7 @@ export const StadiumChat: React.FC = () => {
       <AnimatePresence>
         {!mapVisible && (
           <motion.button
+            aria-label="Open Map"
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -300,9 +354,10 @@ export const StadiumChat: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Dev Simulation Button (for Hackathon Demo) */}
-      <div className="absolute top-4 left-4 md:top-6 md:left-6 z-40 flex gap-2">
+      {/* Development-only egress simulation. Production receives real signed events. */}
+      {isDemoMode && <div className="absolute top-4 left-4 md:top-6 md:left-6 z-40 flex gap-2">
         <button
+          aria-label="Simulate egress event"
           onClick={() => triggerEgressSimulation()}
           className="px-2 md:px-3 py-1 md:py-1.5 bg-red-500/20 hover:bg-red-500/40 border border-red-500/50 text-red-400 text-[10px] md:text-xs font-bold rounded-lg backdrop-blur-sm transition-colors cursor-pointer flex items-center gap-2"
         >
@@ -310,7 +365,7 @@ export const StadiumChat: React.FC = () => {
           <span className="hidden sm:inline">Simulate Egress</span>
           <span className="sm:hidden">Egress</span>
         </button>
-      </div>
+      </div>}
     </div>
   );
 };

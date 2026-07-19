@@ -1,3 +1,24 @@
+/**
+ * ============================================================================
+ * File: frontend/src/components/auth/QRScanner.tsx
+ * Purpose: Frontend Application Module.
+ * Architecture: React functional component/module in Vite ecosystem.
+ * Inputs: Props, Context, or API data.
+ * Outputs: Rendered DOM or functional logic.
+ * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * ============================================================================
+ */
+/**
+ * Stadium Sync — QR Code Ticket Scanner Component.
+ *
+ * Entry point for fan authentication. Uses the device camera to scan the ticket's
+ * QR code, which contains a signed JSON payload (ticket_id, match_id, checksum).
+ * On successful scan, sends the payload to POST /auth/scan-ticket, stores the JWT,
+ * and triggers the parent callback to transition into the StadiumChat interface.
+ *
+ * Includes a demo/manual entry mode for development and accessibility testing.
+ * Supports both Firebase Auth (production) and direct JWT (development) flows.
+ */
 import { useState } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { motion } from 'framer-motion';
@@ -11,34 +32,32 @@ interface QRScannerProps {
 export function QRScanner({ onScanSuccess }: QRScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const isDemoMode = import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true';
 
   const handleScan = async (text: string) => {
     if (loading) return;
     try {
       setLoading(true);
       setError(null);
-      console.log('Scanned payload:', text);
       await loginWithQR(text);
       onScanSuccess();
-    } catch (err: any) {
-      console.error('Scan Error:', err);
+    } catch {
       setError('Invalid Ticket QR Code. Please try again.');
       setLoading(false);
     }
   };
 
   const handleBypass = async () => {
-    // For Hackathon Demo Purposes
-    const mockPayload = JSON.stringify({
-      ticket_id: "ticket-001", 
-      match_id: "M2026-QF1", 
-      checksum: "642f90c0d004"
-    });
+    const mockPayload = import.meta.env.VITE_DEMO_QR_PAYLOAD;
+    if (!mockPayload) {
+      setError('Demo ticket is not configured. Please scan a valid ticket.');
+      return;
+    }
     await handleScan(mockPayload);
   };
 
   return (
-    <div className="relative flex flex-col items-center justify-center w-full h-full min-h-screen bg-slate-950 text-slate-100 overflow-hidden">
+    <div className="relative flex flex-col items-center justify-center w-full h-full min-h-screen bg-slate-950 text-slate-100 overflow-hidden" role="region" aria-label="Ticket authentication">
       
       {/* Background Decorative Elements */}
       <div className="absolute inset-0 bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
@@ -61,7 +80,7 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
         </p>
 
         {/* Scanner Container with futuristic border */}
-        <div className="relative w-full aspect-square max-w-[320px] rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl shadow-emerald-900/20 bg-slate-900">
+        <div className="relative w-full aspect-square max-w-[320px] rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl shadow-emerald-900/20 bg-slate-900" role="region" aria-label="QR code scanner viewfinder">
           
           {loading ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm z-20">
@@ -71,14 +90,16 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
               >
                 <ScanLine className="w-12 h-12 text-emerald-500 mb-4" />
               </motion.div>
-              <span className="text-emerald-400 font-medium animate-pulse">Authenticating Ticket...</span>
+              <span className="text-emerald-400 font-medium animate-pulse" role="status" aria-live="polite">Authenticating Ticket...</span>
             </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              {/* @ts-ignore */}
               <Scanner 
-                onScan={(result: any) => handleScan(result?.[0]?.rawValue || String(result))} 
-                onError={(error: any) => console.log(error?.message)} 
+                onScan={(results) => {
+                  const value = results[0]?.rawValue;
+                  if (value) void handleScan(value);
+                }}
+                onError={() => setError('Camera access is unavailable. Please allow camera access and try again.')}
               />
               {/* Corner Accents */}
               <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-emerald-500 rounded-tl-lg z-10 pointer-events-none" />
@@ -93,15 +114,16 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mt-6 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm text-center w-full max-w-[320px]"
+            className="mt-6 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm text-center w-full max-w-[320px]" role="alert" aria-live="assertive"
           >
             {error}
           </motion.div>
         )}
 
-        <div className="mt-12 flex flex-col items-center gap-4 w-full">
-          {/* Dev Bypass Button */}
+        {isDemoMode && <div className="mt-12 flex flex-col items-center gap-4 w-full">
+          {/* Development-only demo shortcut; excluded from normal production builds. */}
           <button 
+            aria-label="Developer bypass login"
             onClick={handleBypass}
             disabled={loading}
             className="flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-colors border border-slate-700 hover:border-slate-600 disabled:opacity-50"
@@ -109,7 +131,7 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
             <Ticket className="w-4 h-4" />
             <span>Dev Bypass: Auto-Login</span>
           </button>
-        </div>
+        </div>}
       </motion.div>
     </div>
   );

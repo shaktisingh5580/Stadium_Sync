@@ -28,8 +28,13 @@ os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["REDIS_URL"] = ""
 os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
 os.environ["RATE_LIMIT_ENABLED"] = "false"  # Disable for most tests
-os.environ["GEMINI_API_KEY"] = ""
+os.environ["GEMINI_API_KEY_1"] = ""
+os.environ["GEMINI_API_KEY_3"] = ""
+os.environ["NVIDIA_API_KEY"] = ""
 os.environ["IOT_API_KEY"] = "test-iot-key"
+os.environ["ALLOW_AI_MOCK_FALLBACK"] = "true"
+os.environ["ALLOW_DEMO_FEATURES"] = "true"
+os.environ["TICKET_QR_SIGNING_KEY"] = "test-qr-signing-key-for-testing"
 
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import get_db  # noqa: E402
