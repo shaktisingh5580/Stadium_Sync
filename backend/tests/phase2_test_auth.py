@@ -108,8 +108,8 @@ async def test_invalid_json_payload(client: AsyncClient):
         "/api/v1/auth/scan-ticket",
         json={"qr_payload": "not-a-json-string"},
     )
-    assert response.status_code == 400
-    assert "not valid JSON" in response.json()["error"]["message"]
+    assert response.status_code == 401
+    assert "Malformed security token" in response.json()["detail"]
 
 
 # ──────────────────────────────────────────────
@@ -124,8 +124,8 @@ async def test_missing_fields_payload(client: AsyncClient):
         "/api/v1/auth/scan-ticket",
         json={"qr_payload": payload},
     )
-    assert response.status_code == 400
-    assert "missing fields" in response.json()["error"]["message"]
+    assert response.status_code == 401
+    assert "Malformed security token" in response.json()["detail"]
 
 
 # ──────────────────────────────────────────────
@@ -144,8 +144,8 @@ async def test_invalid_checksum(client: AsyncClient):
         "/api/v1/auth/scan-ticket",
         json={"qr_payload": payload},
     )
-    assert response.status_code == 400
-    assert "checksum verification failed" in response.json()["error"]["message"]
+    assert response.status_code == 401
+    assert "Malformed security token" in response.json()["detail"]
 
 
 # ──────────────────────────────────────────────

@@ -24,14 +24,15 @@ from app.core.security import create_access_token, verify_token
 from tests.conftest import TestData
 
 
-def test_expired_jwt_is_rejected():
+@pytest.mark.asyncio
+async def test_expired_jwt_is_rejected():
     """Expired credentials must not be accepted by the authorization layer."""
     token = create_access_token(
         {"sub": "expired-ticket", "role": "fan"},
         expires_delta=timedelta(seconds=-1),
     )
     with pytest.raises(UnauthorizedException):
-        verify_token(token)
+        await verify_token(token)
 
 
 def test_production_settings_reject_wildcard_cors():

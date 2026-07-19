@@ -118,7 +118,8 @@ def test_config_loads():
 # Test 6: JWT Create → Verify Round-Trip
 # ──────────────────────────────────────────────
 
-def test_jwt_round_trip():
+@pytest.mark.asyncio
+async def test_jwt_round_trip():
     """Create a JWT and verify it decodes correctly."""
     from app.core.security import create_access_token, verify_token
 
@@ -128,7 +129,7 @@ def test_jwt_round_trip():
         "role": "fan",
     })
 
-    payload = verify_token(token)
+    payload = await verify_token(token)
     assert payload["sub"] == "ticket-123"
     assert payload["seat"]["section"] == "S204"
     assert payload["role"] == "fan"
@@ -140,10 +141,12 @@ def test_jwt_round_trip():
 # Test 7: JWT Expired Token
 # ──────────────────────────────────────────────
 
-def test_jwt_expired_token():
+@pytest.mark.asyncio
+async def test_jwt_expired_token():
     """Expired tokens should raise UnauthorizedException."""
     from app.core.security import create_access_token, verify_token
     from app.core.exceptions import UnauthorizedException
+    from datetime import timedelta
 
     token = create_access_token(
         data={"sub": "ticket-123", "role": "fan"},
@@ -151,7 +154,7 @@ def test_jwt_expired_token():
     )
 
     with pytest.raises(UnauthorizedException):
-        verify_token(token)
+        await verify_token(token)
 
 
 # ──────────────────────────────────────────────
@@ -285,14 +288,15 @@ async def test_auth_dependency_rejects_no_token(client: AsyncClient):
     from app.core.security import verify_token
 
     with pytest.raises(UnauthorizedException):
-        verify_token("invalid-token-string")
+        await verify_token("invalid-token-string")
 
 
 # ──────────────────────────────────────────────
 # Test 15: Multiple Roles JWT
 # ──────────────────────────────────────────────
 
-def test_volunteer_and_admin_tokens():
+@pytest.mark.asyncio
+async def test_volunteer_and_admin_tokens():
     """Volunteer and admin tokens should carry correct roles."""
     from app.core.security import (
         create_volunteer_token,
@@ -301,10 +305,10 @@ def test_volunteer_and_admin_tokens():
     )
 
     vol_token = create_volunteer_token("vol-1", "Alice")
-    vol_payload = verify_token(vol_token)
+    vol_payload = await verify_token(vol_token)
     assert vol_payload["role"] == "volunteer"
     assert vol_payload["name"] == "Alice"
 
     admin_token = create_admin_token("admin-1")
-    admin_payload = verify_token(admin_token)
+    admin_payload = await verify_token(admin_token)
     assert admin_payload["role"] == "admin"

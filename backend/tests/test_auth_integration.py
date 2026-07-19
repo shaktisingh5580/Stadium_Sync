@@ -13,7 +13,7 @@ import json
 from httpx import AsyncClient
 
 @pytest.mark.asyncio
-async def test_qr_scan_to_jwt_full_flow(test_client: AsyncClient, test_db):
+async def test_qr_scan_to_jwt_full_flow(client: AsyncClient, db_session):
     """End-to-end QR scan → JWT → /me endpoint."""
     
     # 1. Scan valid QR
@@ -23,7 +23,7 @@ async def test_qr_scan_to_jwt_full_flow(test_client: AsyncClient, test_db):
     
     # Normally this would be a real request hitting a test DB.
     # We will simulate the structure here.
-    # response = await test_client.post("/api/v1/auth/scan-ticket", json=valid_payload)
+    # response = await client.post("/api/v1/auth/scan-ticket", json=valid_payload)
     # assert response.status_code == 200
     # data = response.json()
     # assert data["success"] is True
@@ -31,16 +31,16 @@ async def test_qr_scan_to_jwt_full_flow(test_client: AsyncClient, test_db):
     
     # 2. Use JWT to hit /me
     # headers = {"Authorization": f"Bearer {token}"}
-    # me_response = await test_client.get("/api/v1/auth/me", headers=headers)
+    # me_response = await client.get("/api/v1/auth/me", headers=headers)
     # assert me_response.status_code == 200
     # assert me_response.json()["data"]["ticket_id"] == "TICKET-123"
     pass
 
 @pytest.mark.asyncio
-async def test_token_revocation_prevents_reuse(test_client: AsyncClient):
+async def test_token_revocation_prevents_reuse(client: AsyncClient):
     """Issue token → revoke → use revoked token fails."""
     # token = create_access_token({"sub": "user_1"})
-    # await test_client.post("/api/v1/auth/logout", headers={"Authorization": f"Bearer {token}"})
-    # response = await test_client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    # await client.post("/api/v1/auth/logout", headers={"Authorization": f"Bearer {token}"})
+    # response = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
     # assert response.status_code == 401
     pass

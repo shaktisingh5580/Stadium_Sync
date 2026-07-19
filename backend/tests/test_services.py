@@ -16,10 +16,11 @@ async def test_validate_ticket_checksum():
     from app.services.ticket_service import decode_qr_payload
     import json
     
-    # Valid
+    # Invalid
     payload = json.dumps({"ticket_id": "test", "match_id": "test", "checksum": "abc"})
-    data = decode_qr_payload(payload)
-    assert data["ticket_id"] == "test"
+    from app.core.exceptions import BadRequestException
+    with pytest.raises(BadRequestException, match="checksum verification failed"):
+        decode_qr_payload(payload)
 
 @pytest.mark.asyncio
 async def test_gemini_agentic_chat_prompt_injection():

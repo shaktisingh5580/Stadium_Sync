@@ -35,6 +35,9 @@ from app.models.incident import (  # noqa: F401
     UpdateAuthorType,
 )
 
+# ── Audit ──
+from app.models.audit import AuditLog  # noqa: F401
+
 # ── Volunteers ──
 from app.models.volunteer import (  # noqa: F401
     AssignmentStatus,
@@ -68,6 +71,7 @@ __all__ = [
     "SectionType", "GateType", "TransitMethod",
     "Incident", "IncidentUpdate", "Severity",
     "IncidentStatus", "UpdateAuthorType",
+    "AuditLog",
     "Volunteer", "VolunteerAssignment", "AssignmentStatus", "VolunteerStatus",
     "AmenityPoint", "WasteBin", "EcoClassification",
     "AmenityType", "BinType",
