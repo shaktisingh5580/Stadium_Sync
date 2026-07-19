@@ -14,6 +14,7 @@
 
 import { lazy, Suspense, useState, useEffect } from 'react';
 import { QRScanner } from '@/components/auth/QRScanner';
+import { fetchDemoCredentials } from '@/api';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -49,6 +50,29 @@ export default function App() {
       if (getRoleFromToken(token) === 'admin') {
         setIsAdmin(true);
       }
+    } else if (window.location.pathname === '/admin') {
+      // Auto-bypass for /admin URL
+      const doAdminBypass = async () => {
+        try {
+          let adminToken = import.meta.env.VITE_DEMO_ADMIN_TOKEN;
+          try {
+            const creds = await fetchDemoCredentials();
+            adminToken = creds.admin_token;
+          } catch (e) {
+            console.warn("Could not fetch demo credentials from backend, falling back to local env vars.");
+          }
+          if (adminToken) {
+            sessionStorage.setItem('stadium_sync_token', adminToken);
+            setIsAuthenticated(true);
+            setIsAdmin(true);
+            // Optionally clear the URL back to root without refreshing
+            window.history.replaceState({}, '', '/');
+          }
+        } catch (e) {
+          console.error("Failed auto admin bypass", e);
+        }
+      };
+      void doAdminBypass();
     }
   }, []);
 
