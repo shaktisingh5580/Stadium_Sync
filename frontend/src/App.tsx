@@ -48,8 +48,15 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
-  // Check if already authenticated on mount
+  // Check if already authenticated on mount or if admin demo bypass is used
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true') {
+      setIsAuthenticated(true);
+      setIsAdmin(true);
+      return;
+    }
+
     const token = sessionStorage.getItem('stadium_sync_token');
     if (token) {
       setIsAuthenticated(true);
