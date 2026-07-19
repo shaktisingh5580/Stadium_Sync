@@ -27,7 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.database import get_db  # noqa: F401 — re-exported
 from app.core.exceptions import ForbiddenException, UnauthorizedException
-from app.core.firebase_runtime import verify_app_check_token, verify_firebase_id_token
+
 from app.core.redis_client import get_redis  # noqa: F401 — re-exported
 from app.core.security import verify_token
 
@@ -37,14 +37,11 @@ settings = get_settings()
 async def get_current_user(
     request: Request,
     authorization: Optional[str] = Header(None),
-    firebase_app_check: Optional[str] = Header(None, alias="X-Firebase-AppCheck"),
 ) -> Dict[str, Any]:
     """
     Extract and verify the current user from the JWT token.
 
-    Looks for the token in:
-    1. Authorization: Bearer <token> header
-    2. token query parameter (for WebSocket connections)
+    Looks for the token in the Authorization: Bearer <token> header.
 
     Returns the decoded JWT payload containing:
     - sub: ticket_id
@@ -64,24 +61,7 @@ async def get_current_user(
     if not token:
         raise UnauthorizedException("Missing authentication token")
 
-    if settings.FIREBASE_AUTH_ENABLED:
-        await verify_app_check_token(firebase_app_check or "")
-        claims = await verify_firebase_id_token(token)
-        role = claims.get("role", "fan")
-        if claims.get("admin") is True:
-            role = "admin"
-        payload = {
-            "sub": claims.get("ticket_id", claims["uid"]),
-            "firebase_uid": claims["uid"],
-            "holder_name": claims.get("name", ""),
-            "match_id": claims.get("match_id", ""),
-            "seat": claims.get("seat", {}),
-            "transit_choice": claims.get("transit_choice"),
-            "needs_accessibility": claims.get("needs_accessibility", False),
-            "role": role,
-        }
-    else:
-        payload = verify_token(token)
+    payload = verify_token(token)
 
     # Attach to request state for downstream use
     request.state.current_user = payload
@@ -143,13 +123,12 @@ async def verify_api_key(
 async def get_optional_user(
     request: Request,
     authorization: Optional[str] = Header(None),
-    firebase_app_check: Optional[str] = Header(None, alias="X-Firebase-AppCheck"),
 ) -> Optional[Dict[str, Any]]:
     """
     Optionally extract user from JWT. Returns None if no token provided.
     Useful for endpoints that work both authenticated and anonymously.
     """
     try:
-        return await get_current_user(request, authorization, firebase_app_check)
+        return await get_current_user(request, authorization)
     except UnauthorizedException:
         return None

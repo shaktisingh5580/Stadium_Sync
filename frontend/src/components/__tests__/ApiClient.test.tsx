@@ -30,12 +30,6 @@ const sessionStorageMock = {
 };
 Object.defineProperty(window, 'sessionStorage', { value: sessionStorageMock });
 
-// Mock firebase-client to avoid initialization issues
-vi.mock('@/lib/firebase-client', () => ({
-  getAuthenticatedHeaders: vi.fn().mockResolvedValue({}),
-  clearAuthenticatedSession: vi.fn(),
-}));
-
 describe('API Client', () => {
   beforeEach(() => {
     vi.resetModules();

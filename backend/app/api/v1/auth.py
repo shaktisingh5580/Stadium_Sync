@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
 from app.core.config import get_settings
-from app.core.firebase_runtime import create_firebase_custom_token
+
 from app.core.rate_limiter import limiter
 from app.core.security import (
     create_access_token,
@@ -112,11 +112,6 @@ async def scan_ticket(
         },
         expires_delta=expires_delta,
     )
-    firebase_custom_token = await create_firebase_custom_token(
-        ticket_id=fan_session.ticket_id,
-        match_id=fan_session.match_id,
-        needs_accessibility=fan_session.needs_accessibility,
-    )
 
     return {
         "success": True,
@@ -124,7 +119,6 @@ async def scan_ticket(
             token=token,
             expires_at=expires_at,
             fan=fan_session,
-            firebase_custom_token=firebase_custom_token or None,
         ).model_dump(),
         "request_id": getattr(request.state, "request_id", ""),
     }

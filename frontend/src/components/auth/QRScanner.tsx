@@ -17,7 +17,7 @@
  * and triggers the parent callback to transition into the StadiumChat interface.
  *
  * Includes a demo/manual entry mode for development and accessibility testing.
- * Supports both Firebase Auth (production) and direct JWT (development) flows.
+ * Supports JWT-based authentication with HMAC-verified QR ticket payloads.
  */
 import { useState } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';

@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.core.exceptions import NotFoundException, ForbiddenException
-from app.core.firebase_runtime import write_operational_event
+from app.core.audit_logger import write_operational_event
 from app.models.incident import Incident, IncidentStatus, IncidentUpdate, Severity
 from app.models.ticket import Seat, Section
 from app.services.gemini_client import triage_incident

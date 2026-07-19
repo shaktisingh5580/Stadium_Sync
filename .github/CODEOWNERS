@@ -1,0 +1,15 @@
+# Stadium Sync — Code Ownership
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
+* @shaktisingh5580
+
+# Backend (FastAPI + Python)
+/backend/ @shaktisingh5580
+
+# Frontend (React + TypeScript)
+/frontend/ @shaktisingh5580
+
+# Infrastructure & CI/CD
+/.github/ @shaktisingh5580
+/docker-compose.yml @shaktisingh5580

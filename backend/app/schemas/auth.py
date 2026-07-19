@@ -78,7 +78,6 @@ class QRScanResponse(BaseModel):
     token_type: str = "bearer"
     expires_at: datetime
     fan: FanSession
-    firebase_custom_token: Optional[str] = None
 
 
 class MeResponse(BaseModel):

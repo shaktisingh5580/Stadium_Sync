@@ -47,12 +47,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_MINUTES: int = 240  # 4 hours per match
 
-    # ── Firebase / Google Cloud ──
-    FIREBASE_AUTH_ENABLED: bool = False
-    FIREBASE_PROJECT_ID: str = ""
-    FIREBASE_APP_CHECK_ENFORCED: bool = False
-    FIRESTORE_EVENT_MIRROR_ENABLED: bool = False
-
+    # ── Google Cloud ──
     # Demo fallbacks are useful in local development but must never create
     # fabricated operational data in a production deployment.
     ALLOW_AI_MOCK_FALLBACK: bool = False
@@ -125,20 +120,12 @@ class Settings(BaseSettings):
             errors.append("TICKET_QR_SIGNING_KEY must be at least 32 characters")
         if len(self.IOT_API_KEY) < 32:
             errors.append("IOT_API_KEY must be at least 32 characters")
-        if not self.FIREBASE_AUTH_ENABLED:
-            errors.append("FIREBASE_AUTH_ENABLED must be true")
-        if not self.FIREBASE_PROJECT_ID:
-            errors.append("FIREBASE_PROJECT_ID is required")
-        if not self.FIREBASE_APP_CHECK_ENFORCED:
-            errors.append("FIREBASE_APP_CHECK_ENFORCED must be true")
-        if not self.FIRESTORE_EVENT_MIRROR_ENABLED:
-            errors.append("FIRESTORE_EVENT_MIRROR_ENABLED must be true")
         if self.ALLOW_AI_MOCK_FALLBACK:
             errors.append("ALLOW_AI_MOCK_FALLBACK must be false")
         if self.ALLOW_DEMO_FEATURES:
             errors.append("ALLOW_DEMO_FEATURES must be false")
         if errors:
-            raise ValueError("Unsafe production configuration: " + "; ".join(errors))
+            raise ValueError("Unsafe production configuration: " + ";".join(errors))
         return self
 
     @property

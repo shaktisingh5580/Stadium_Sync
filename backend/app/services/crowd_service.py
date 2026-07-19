@@ -24,7 +24,7 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundException, BadRequestException
-from app.core.firebase_runtime import write_operational_event
+from app.core.audit_logger import write_operational_event
 from app.models.crowd import (
     CrowdSnapshot,
     CrowdSource,

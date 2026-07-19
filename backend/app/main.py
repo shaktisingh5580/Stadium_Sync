@@ -22,7 +22,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import ORJSONResponse, PlainTextResponse
 
 from app.core.config import get_settings
 from app.core.database import create_tables, dispose_engine
@@ -146,3 +146,15 @@ async def root():
         "docs": "/docs",
         "health": f"{settings.API_V1_PREFIX}/health",
     }
+
+
+@app.get("/.well-known/security.txt", include_in_schema=False)
+async def security_txt():
+    """RFC 9116 — Security contact and disclosure information."""
+    return PlainTextResponse(
+        "Contact: mailto:shaktisingh4140@gmail.com\n"
+        "Preferred-Languages: en\n"
+        "Canonical: https://github.com/shaktisingh5580/Stadium_Sync/blob/main/SECURITY.md\n"
+        "Policy: https://github.com/shaktisingh5580/Stadium_Sync/blob/main/SECURITY.md\n",
+        media_type="text/plain",
+    )

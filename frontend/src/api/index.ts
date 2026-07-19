@@ -20,19 +20,13 @@
  * - sendChatMessage — Agentic AI concierge chat (Google Gemini)
  */
 import { apiClient } from './client';
-import { signInWithFirebaseCustomToken } from '@/lib/firebase-client';
 import type { EcoVisionResult } from '../types';
 
 // Auth / Tokens
 export const loginWithQR = async (qrPayload: string) => {
   const res = await apiClient.post('/auth/scan-ticket', { qr_payload: qrPayload });
-  const firebaseCustomToken = res.data.data.firebase_custom_token;
-  if (firebaseCustomToken) {
-    await signInWithFirebaseCustomToken(firebaseCustomToken);
-  } else {
-    sessionStorage.setItem('stadium_sync_token', res.data.data.token);
-    sessionStorage.removeItem('stadium_sync_auth_provider');
-  }
+  sessionStorage.setItem('stadium_sync_token', res.data.data.token);
+  sessionStorage.removeItem('stadium_sync_auth_provider');
   return res.data.data;
 };
 

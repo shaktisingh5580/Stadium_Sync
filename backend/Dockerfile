@@ -1,5 +1,5 @@
 # ── Stadium Sync Backend — Production Dockerfile ──
-# Multi-stage build optimized for Render deployment
+# Multi-stage build optimized for Render Docker deployment
 
 # Stage 1: Builder — install dependencies
 FROM python:3.12-slim AS builder
@@ -29,6 +29,14 @@ COPY --from=builder /install /usr/local
 COPY app/ ./app/
 COPY scripts/ ./scripts/
 
+# Seed demo database during build (baked into image for hackathon demo)
+RUN DATABASE_URL="sqlite+aiosqlite:///./stadium_sync.db" \
+    APP_ENV=development \
+    SECRET_KEY=build-time-seed-key-not-used-at-runtime \
+    TICKET_QR_SIGNING_KEY=build-time-qr-key-12345678901234 \
+    IOT_API_KEY=build-time-iot-key \
+    python -m scripts.generate_test_tickets || true
+
 # Create non-root user for security and give it permissions
 RUN adduser --disabled-password --no-create-home appuser
 RUN chown -R appuser:appuser /app
@@ -37,12 +45,12 @@ USER appuser
 # Expose port (Render sets PORT env var)
 EXPOSE 8080
 
-# Health check for Render
+# Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import os,urllib.request; urllib.request.urlopen(f'http://localhost:{os.environ.get(\"PORT\",8080)}/api/v1/health')" || exit 1
 
 # Start the application
-# Render sets $PORT; we default to 8000 for local Docker
+# Render sets $PORT; we default to 8080 for local Docker
 CMD uvicorn app.main:app \
     --host 0.0.0.0 \
     --port ${PORT} \
