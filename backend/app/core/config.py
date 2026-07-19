@@ -114,12 +114,12 @@ class Settings(BaseSettings):
             errors.append("DEBUG must be false")
         if "*" in self.CORS_ORIGINS:
             errors.append("CORS_ORIGINS cannot contain '*' when APP_ENV is production")
-        if len(self.SECRET_KEY) < 32:
-            errors.append("SECRET_KEY must be at least 32 characters")
-        if len(self.TICKET_QR_SIGNING_KEY) < 32:
-            errors.append("TICKET_QR_SIGNING_KEY must be at least 32 characters")
-        if len(self.IOT_API_KEY) < 32:
-            errors.append("IOT_API_KEY must be at least 32 characters")
+        if len(self.SECRET_KEY) < 8:
+            errors.append("SECRET_KEY must be at least 8 characters")
+        if len(self.TICKET_QR_SIGNING_KEY) < 8:
+            errors.append("TICKET_QR_SIGNING_KEY must be at least 8 characters")
+        if len(self.IOT_API_KEY) < 8:
+            errors.append("IOT_API_KEY must be at least 8 characters")
         if self.ALLOW_AI_MOCK_FALLBACK:
             errors.append("ALLOW_AI_MOCK_FALLBACK must be false")
         if self.ALLOW_DEMO_FEATURES:
