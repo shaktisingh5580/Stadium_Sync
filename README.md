@@ -26,15 +26,6 @@
 
 ---
 
-## 🆕 Recent Updates
-
-- **Production Security Refactor:** Enforced strict 32+ character limits for `SECRET_KEY`, `TICKET_QR_SIGNING_KEY`, and `IOT_API_KEY` on Render (`APP_ENV=production`) to eliminate development bypasses.
-- **Robust Redis Connection Pooling:** Resolved import issues by converting static variables to lazy-initialized `get_redis()` connections for stability across uvicorn reloads.
-- **Rate Limiting & Abuse Prevention:** Implemented `check_ticket_abuse` to stop QR scan replay attacks and brute force scanning within 15-minute sliding windows.
-- **Test Seeder Integrity:** Updated `generate_test_tickets.py` to intelligently check for existing database seeds to prevent SQLite `IntegrityError` failures.
-- **Documentation Overhaul:** Automatically injected and manually refined standard header documentation across all 79 project files for improved readability and codebase navigation.
-
----
 ## 🏟️ Chosen Vertical
 
 > **Smart Stadiums & Tournament Operations** (FIFA World Cup 2026) — one platform, three personas.
