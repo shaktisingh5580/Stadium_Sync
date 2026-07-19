@@ -41,7 +41,7 @@ export const EcoVisionPanel: React.FC = () => {
       const response = await classifyWasteImage(dummyB64);
       setResult(response);
     } catch (err: unknown) {
-      setError(err.response?.data?.message || 'Eco-Vision classification failed.');
+      setError((err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Eco-Vision classification failed.');
     } finally {
       setIsProcessing(false);
     }

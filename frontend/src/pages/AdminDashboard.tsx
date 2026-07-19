@@ -188,7 +188,7 @@ export function AdminDashboard() {
     try {
       const res = await evaluatePromotions();
       if (res.status === "promotions_triggered") {
-        alert("Flash Sale Generated: " + res.promotion.message);
+        alert("Flash Sale Generated: " + res.promotion?.message);
       }
     } catch {
       alert("Error generating promotions.");

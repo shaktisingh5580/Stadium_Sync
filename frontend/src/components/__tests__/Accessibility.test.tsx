@@ -23,7 +23,7 @@ describe('Accessibility Features', () => {
   it('skip-nav link is present in index.html', () => {
     // The skip-nav link is in index.html, which is the entry point
     // This test verifies the DOM structure after mount
-    const skipNav = document.querySelector('.skip-nav');
+    document.querySelector('.skip-nav');
     // In test environment, index.html is not loaded, so we verify the CSS class exists
     // by checking our index.css was loaded via setupTests
     expect(true).toBe(true); // Structural test — verified by CSS import

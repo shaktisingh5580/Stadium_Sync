@@ -148,14 +148,14 @@ export const StadiumChat: React.FC = () => {
           setMapVisible(true);
           setActiveRoute(undefined);
           if (latestMessage.payload?.poi) {
-            setActivePoi(latestMessage.payload.poi);
-            if (latestMessage.payload.poi.type === 'seat') {
-              setActiveSeat({ x: latestMessage.payload.poi.x, y: latestMessage.payload.poi.y });
+            setActivePoi((latestMessage.payload.poi as { x: number, y: number, name: string, type: string }));
+            if ((latestMessage.payload.poi as { x: number, y: number, name: string, type: string }).type === 'seat') {
+              setActiveSeat({ x: (latestMessage.payload.poi as { x: number, y: number, name: string, type: string }).x, y: (latestMessage.payload.poi as { x: number, y: number, name: string, type: string }).y });
             } else {
               setActiveSeat(undefined);
             }
           } else if (latestMessage.payload?.target === 'seat' && latestMessage.payload?.seat_coordinates) {
-            setActiveSeat(latestMessage.payload.seat_coordinates);
+            setActiveSeat((latestMessage.payload.seat_coordinates as { x: number, y: number }));
             setActivePoi(undefined);
           } else {
             setActiveSeat(undefined);
@@ -165,14 +165,14 @@ export const StadiumChat: React.FC = () => {
         case 'SHOW_ROUTE':
           setMapVisible(true);
           if (latestMessage.payload?.route) {
-            const routePath = latestMessage.payload.route.path;
+            const routePath = (latestMessage.payload.route as { path: { x: number, y: number }[] }).path;
             setActiveRoute(routePath);
             if (routePath && routePath.length > 0) {
               setActiveSeat(routePath[0]);
             }
           }
           if (latestMessage.payload?.poi) {
-            setActivePoi(latestMessage.payload.poi);
+            setActivePoi((latestMessage.payload.poi as { x: number, y: number, name: string, type: string }));
           } else {
             setActivePoi(undefined);
           }
@@ -180,7 +180,7 @@ export const StadiumChat: React.FC = () => {
         case 'SHOW_ECO_RESULT':
           if (latestMessage.payload?.route) {
             setMapVisible(true);
-            const routePath = latestMessage.payload.route.path;
+            const routePath = (latestMessage.payload.route as { path: { x: number, y: number }[] }).path;
             setActiveRoute(routePath);
             if (routePath && routePath.length > 0) {
               setActiveSeat(routePath[0]);
@@ -193,7 +193,7 @@ export const StadiumChat: React.FC = () => {
           setActiveSeat(undefined);
           setActivePoi(undefined);
           if (latestMessage.payload?.heatmapData) {
-            setActiveHeatmap(latestMessage.payload.heatmapData);
+            setActiveHeatmap((latestMessage.payload.heatmapData as Record<string, number>));
           }
           break;
         case 'CLEAR_MAP':

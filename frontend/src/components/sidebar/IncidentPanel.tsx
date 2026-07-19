@@ -51,7 +51,7 @@ export const IncidentPanel: React.FC = () => {
         setDescription('');
       }, 3000);
     } catch (err: unknown) {
-      setError(err.response?.data?.message || 'Failed to report incident.');
+      setError((err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to report incident.');
     } finally {
       setIsSubmitting(false);
     }

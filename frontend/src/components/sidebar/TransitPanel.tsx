@@ -52,7 +52,7 @@ export const TransitPanel: React.FC<TransitPanelProps> = ({ session, onUpdateTra
       setRouteData(route);
       onUpdateTransit(selected);
     } catch (err: unknown) {
-      setError(err.response?.data?.message || 'Failed to generate route.');
+      setError((err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to generate route.');
     } finally {
       setIsLoading(false);
     }
@@ -104,8 +104,8 @@ export const TransitPanel: React.FC<TransitPanelProps> = ({ session, onUpdateTra
         <div className="mt-4 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
           <p className="text-sm text-green-400 mb-1 font-medium">Route Generated!</p>
           <div className="flex justify-between items-center text-xs text-slate-300">
-            <span>Target Gate: <strong>{routeData.target_gate_name}</strong></span>
-            <span>Walk: <strong>~{routeData.estimated_time_mins} mins</strong></span>
+            <span>Target Gate: <strong>{String(routeData.target_gate_name)}</strong></span>
+            <span>Walk: <strong>~{String(routeData.estimated_time_mins)} mins</strong></span>
           </div>
         </div>
       )}
