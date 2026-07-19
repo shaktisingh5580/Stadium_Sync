@@ -22,6 +22,11 @@ export const loginWithQR = async (qrPayload: string) => {
   return res.data.data;
 };
 
+export const fetchDemoCredentials = async () => {
+  const res = await apiClient.get('/auth/demo-credentials');
+  return res.data.data;
+};
+
 export const fetchFanSession = async () => {
   const res = await apiClient.get('/auth/me');
   return res.data.data;

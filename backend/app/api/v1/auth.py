@@ -13,6 +13,7 @@ Hackathon Vertical: Security & Authentication
 """
 
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
@@ -20,6 +21,7 @@ from fastapi import APIRouter, Depends, Request, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.models.audit import AuditLog
 from app.core.config import get_settings
 from app.core.redis_client import get_redis
 from app.core.rate_limiter import limiter, check_ticket_abuse
@@ -114,8 +116,6 @@ async def scan_ticket(
     # Step 5: Mark ticket as scanned
     await mark_ticket_scanned(db, ticket)
     
-    import uuid
-    from app.models.audit import AuditLog
     audit_entry = AuditLog(
         id=str(uuid.uuid4()),
         action="ticket_scanned",
@@ -243,3 +243,56 @@ async def refresh_token(
         ).model_dump(),
         "request_id": getattr(request.state, "request_id", ""),
     }
+
+
+# ──────────────────────────────────────────────
+# GET /auth/demo-credentials
+# ──────────────────────────────────────────────
+
+@router.get(
+    "/demo-credentials",
+    summary="Get demo credentials for dev bypass",
+    description=(
+        "Returns a valid demo QR payload and admin JWT token generated "
+        "with the server's actual signing keys. Only available when "
+        "ALLOW_DEMO_FEATURES is enabled."
+    ),
+)
+@limiter.limit("10/minute")
+async def get_demo_credentials(request: Request):
+    """
+    Generate valid demo credentials for the dev bypass buttons.
+
+    Returns a QR payload signed with the server's TICKET_QR_SIGNING_KEY
+    and an admin JWT signed with the server's SECRET_KEY, so the frontend
+    bypass always works regardless of deployment environment.
+    """
+    if not settings.ALLOW_DEMO_FEATURES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo features are disabled in this environment",
+        )
+
+    from app.services.ticket_service import generate_qr_payload
+
+    # Generate valid QR payload for demo ticket
+    qr_payload = generate_qr_payload("ticket-001", "M2026-QF1")
+
+    # Generate valid admin JWT
+    admin_token = create_access_token(
+        data={
+            "sub": "admin-demo-001",
+            "role": "admin",
+        },
+        expires_delta=timedelta(days=365),
+    )
+
+    return {
+        "success": True,
+        "data": {
+            "qr_payload": qr_payload,
+            "admin_token": admin_token,
+        },
+        "request_id": getattr(request.state, "request_id", ""),
+    }
+

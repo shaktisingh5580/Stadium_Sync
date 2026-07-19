@@ -1,22 +1,8 @@
-/**
- * ===============================================================================
- * File: frontend/src/components/auth/QRScanner.tsx
- * Purpose: QR code scanner component - gate-keeping authentication. Captures 
- *          QR from camera, sends payload to backend, stores JWT on success.
- * Architecture: Integrates @yudiel/react-qr-scanner library. Requests camera 
- *               permission, detects QR payload, validates via backend, stores 
- *               token in sessionStorage, redirects to main app.
- * Inputs: Camera feed (browser permission required).
- * Outputs: JWT token stored in sessionStorage, auth state updated.
- * Hackathon Vertical: Security & Authentication
- * ===============================================================================
- */
-
 import { useState } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { motion } from 'framer-motion';
-import { ScanLine, ShieldCheck, Ticket } from 'lucide-react';
-import { loginWithQR } from '@/api';
+import { ScanLine, ShieldCheck, Ticket, ShieldAlert } from 'lucide-react';
+import { loginWithQR, fetchDemoCredentials } from '@/api';
 
 interface QRScannerProps {
   onScanSuccess: () => void;
@@ -41,12 +27,59 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
   };
 
   const handleBypass = async () => {
-    const mockPayload = import.meta.env.VITE_DEMO_QR_PAYLOAD;
-    if (!mockPayload) {
-      setError('Demo ticket is not configured. Please scan a valid ticket.');
-      return;
+    if (loading) return;
+    try {
+      setLoading(true);
+      setError(null);
+      
+      let payload = import.meta.env.VITE_DEMO_QR_PAYLOAD;
+      try {
+        const creds = await fetchDemoCredentials();
+        payload = creds.qr_payload;
+      } catch (e) {
+        console.warn("Could not fetch demo credentials from backend, falling back to local env vars.");
+      }
+
+      if (!payload) {
+        setError('Demo ticket is not configured. Please scan a valid ticket.');
+        setLoading(false);
+        return;
+      }
+      
+      await loginWithQR(payload);
+      onScanSuccess();
+    } catch {
+      setError('Invalid Ticket QR Code. Please try again.');
+      setLoading(false);
     }
-    await handleScan(mockPayload);
+  };
+
+  const handleAdminBypass = async () => {
+    if (loading) return;
+    try {
+      setLoading(true);
+      setError(null);
+      
+      let adminToken = import.meta.env.VITE_DEMO_ADMIN_TOKEN;
+      try {
+        const creds = await fetchDemoCredentials();
+        adminToken = creds.admin_token;
+      } catch (e) {
+        console.warn("Could not fetch demo credentials from backend, falling back to local env vars.");
+      }
+      
+      if (!adminToken) {
+        setError('Demo admin token is not configured.');
+        setLoading(false);
+        return;
+      }
+      
+      sessionStorage.setItem('stadium_sync_token', adminToken);
+      onScanSuccess();
+    } catch {
+      setError('Failed to bypass admin login.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -114,18 +147,28 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
         )}
 
         {isDemoMode && <div className="mt-12 flex flex-col items-center gap-4 w-full">
-          {/* Development-only demo shortcut; excluded from normal production builds. */}
+          {/* Development-only demo shortcuts; excluded from normal production builds. */}
           <button 
-            aria-label="Developer bypass login"
+            aria-label="Developer bypass login as fan"
             onClick={handleBypass}
             disabled={loading}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-colors border border-slate-700 hover:border-slate-600 disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-colors border border-slate-700 hover:border-slate-600 disabled:opacity-50 w-full max-w-xs justify-center"
           >
             <Ticket className="w-4 h-4" />
-            <span>Dev Bypass: Auto-Login</span>
+            <span>Dev Bypass: Fan Login</span>
+          </button>
+          <button 
+            aria-label="Developer bypass login as admin"
+            onClick={handleAdminBypass}
+            disabled={loading}
+            className="flex items-center gap-2 px-6 py-3 bg-blue-900/50 hover:bg-blue-800/60 text-blue-300 rounded-xl font-medium transition-colors border border-blue-700/50 hover:border-blue-600 disabled:opacity-50 w-full max-w-xs justify-center"
+          >
+            <ShieldAlert className="w-4 h-4" />
+            <span>Dev Bypass: Admin Login</span>
           </button>
         </div>}
       </motion.div>
     </div>
   );
 }
+

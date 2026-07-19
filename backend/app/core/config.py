@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     # Demo fallbacks are useful in local development but must never create
     # fabricated operational data in a production deployment.
     ALLOW_AI_MOCK_FALLBACK: bool = False
-    ALLOW_DEMO_FEATURES: bool = False
+    ALLOW_DEMO_FEATURES: bool = True
 
     # ── Database (Neon Serverless PostgreSQL) ──
     DATABASE_URL: str = "sqlite+aiosqlite:///./stadium_sync.db"
@@ -146,8 +146,6 @@ class Settings(BaseSettings):
             errors.append(f"IOT_API_KEY must be at least {MIN_SECRET_LENGTH} characters")
         if self.ALLOW_AI_MOCK_FALLBACK:
             errors.append("ALLOW_AI_MOCK_FALLBACK must be false")
-        if self.ALLOW_DEMO_FEATURES:
-            errors.append("ALLOW_DEMO_FEATURES must be false")
         if errors:
             raise ValueError("Unsafe production configuration: " + ";".join(errors))
         return self

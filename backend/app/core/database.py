@@ -131,7 +131,8 @@ async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
 
 # ── Lifecycle ──
 async def create_tables() -> None:
-    """Create all tables. Use only in dev — production uses Alembic."""
+    """Create all tables in the database (for local dev/testing)."""
+    import app.models  # Ensure all models are registered with Base.metadata
     from app.models import Base  # noqa: F811
 
     async with engine.begin() as conn:
