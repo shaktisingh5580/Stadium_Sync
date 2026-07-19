@@ -1,4 +1,14 @@
 """
+===============================================================================
+FILE: backend/tests/phase3_test_navigation.py
+PURPOSE: Core Backend Application Module.
+ARCHITECTURE: Python/FastAPI module
+INPUTS: Standard application requests
+OUTPUTS: Structured models and responses
+HACKATHON VERTICAL: Code Quality & Testing
+===============================================================================
+"""
+"""
 Stadium Sync — Phase 3 Test Script: Navigation & Pathfinding
 
 Tests:
@@ -8,7 +18,6 @@ Tests:
   4. GET /route computes correct SVG path to closest/matched gate
   5. GET /route without auth returns 401
 """
-
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession

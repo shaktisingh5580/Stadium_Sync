@@ -1,21 +1,14 @@
 """
 ===============================================================================
 File: backend/app/api/v1/volunteers.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Volunteer management API - track real-time positions, dispatch to 
+         incidents, admin visibility.
+Architecture: POST /volunteers/location (GPS update), GET /volunteers/active 
+             (admin dashboard), POST /volunteers/dispatch (assignment).
+Inputs: GPS coordinates from volunteer app, incident assignments.
+Outputs: Volunteer positions, dispatch notifications, assignment tracking.
+Hackathon Vertical: Real-Time Decision Support & Crowd Management
 ===============================================================================
-"""
-"""
-Stadium Sync — Volunteer API Routes.
-
-Endpoints:
-    GET  /api/v1/volunteers/                          — List volunteers
-    GET  /api/v1/volunteers/me                         — Get current volunteer profile
-    POST /api/v1/volunteers/status                     — Update status & location
-    POST /api/v1/volunteers/assignments/{id}/complete  — Complete an assignment
 """
 
 from typing import Any, Dict, Optional

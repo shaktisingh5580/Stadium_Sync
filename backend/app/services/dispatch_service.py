@@ -1,18 +1,17 @@
 """
 ===============================================================================
 File: backend/app/services/dispatch_service.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Volunteer dispatch and routing - finds nearest available volunteer 
+         to incident, computes ETA, sends dispatch notification, tracks 
+         assignment status.
+Architecture: Query active volunteers → calculate distance to incident → sort 
+             by proximity → send dispatch to nearest → track status 
+             (dispatched → arrived → resolved). Uses SVG coordinate distance.
+Inputs: Incident location (svg_x, svg_y), active volunteer positions.
+Outputs: Dispatch assignment, push notification to volunteer, ETA estimate, 
+         assignment tracking.
+Hackathon Vertical: Real-Time Decision Support & Crowd Management
 ===============================================================================
-"""
-"""
-Stadium Sync — Volunteer & Dispatch Service.
-
-Handles volunteer management and geofenced incident dispatch.
-Dispatch logic: find the nearest available volunteer to the incident's section.
 """
 
 import logging

@@ -1,19 +1,16 @@
 """
 ===============================================================================
 File: backend/app/middleware/request_id.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: X-Request-ID injection - assigns unique UUID to every request for 
+         end-to-end tracing through logs, database, and external APIs.
+Architecture: Middleware generates UUID (if not present in header) and stores 
+             in request.state.request_id. All downstream operations can access 
+             and log this ID for correlation.
+Inputs: HTTP requests (with optional existing X-Request-ID header).
+Outputs: UUID stored in request state and included in X-Request-ID response 
+         header for client-side bug reporting.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — Request ID Middleware.
-
-Generates a unique UUID for each request, attaches it to
-request.state and adds it as X-Request-ID response header.
-Used by error handlers for tracing.
 """
 
 import uuid

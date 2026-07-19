@@ -1,24 +1,17 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/components/auth/QRScanner.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: QR code scanner component - gate-keeping authentication. Captures 
+ *          QR from camera, sends payload to backend, stores JWT on success.
+ * Architecture: Integrates @yudiel/react-qr-scanner library. Requests camera 
+ *               permission, detects QR payload, validates via backend, stores 
+ *               token in sessionStorage, redirects to main app.
+ * Inputs: Camera feed (browser permission required).
+ * Outputs: JWT token stored in sessionStorage, auth state updated.
+ * Hackathon Vertical: Security & Authentication
+ * ===============================================================================
  */
-/**
- * Stadium Sync — QR Code Ticket Scanner Component.
- *
- * Entry point for fan authentication. Uses the device camera to scan the ticket's
- * QR code, which contains a signed JSON payload (ticket_id, match_id, checksum).
- * On successful scan, sends the payload to POST /auth/scan-ticket, stores the JWT,
- * and triggers the parent callback to transition into the StadiumChat interface.
- *
- * Includes a demo/manual entry mode for development and accessibility testing.
- * Supports JWT-based authentication with HMAC-verified QR ticket payloads.
- */
+
 import { useState } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { motion } from 'framer-motion';

@@ -1,11 +1,20 @@
 """
+===============================================================================
+FILE: backend/tests/phase6_test_e2e.py
+PURPOSE: Core Backend Application Module.
+ARCHITECTURE: Python/FastAPI module
+INPUTS: Standard application requests
+OUTPUTS: Structured models and responses
+HACKATHON VERTICAL: Code Quality & Testing
+===============================================================================
+"""
+"""
 Stadium Sync — Phase 6 Test Script: E2E Integration + Error Handling
 
 Scenario 1: Full Happy Path Fan Journey (QR→Nav→Eco→Incident→Crowd→Egress)
 Scenario 2: Error Handling & Edge Cases (invalid tokens, 404s, validation)
 Scenario 3: API Endpoint Registry Verification (all routes respond)
 """
-
 import base64
 import pytest
 from httpx import AsyncClient

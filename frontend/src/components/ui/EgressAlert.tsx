@@ -1,24 +1,18 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/components/ui/EgressAlert.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Emergency evacuation alert component - displays high-urgency 
+ *          banner with evacuation message, nearest gate, animated ETA 
+ *          countdown, alert sound.
+ * Architecture: Modal-like alert with red styling, large text, animated timer. 
+ *               Plays alert audio on mount. Dismissible but re-shows on new 
+ *               evacuation event.
+ * Inputs: Evacuation event (message, gate, ETA).
+ * Outputs: Alert UI with high visual/audio salience.
+ * Hackathon Vertical: Real-Time Decision Support & Accessibility
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Egress Alert Overlay Component.
- *
- * Displays a full-screen animated notification when the egress agent pushes
- * a personalized exit route to the fan (typically at the 80th match minute).
- * Shows the assigned gate, estimated walking time, and a "Show Route" button
- * that triggers the map view with the animated path.
- *
- * Also used for emergency evacuation broadcasts with a critical visual style.
- * Uses Framer Motion for attention-grabbing slide-in animation.
- */
+
 import { motion } from 'framer-motion';
 import { AlertTriangle, ArrowRightCircle } from 'lucide-react';
 

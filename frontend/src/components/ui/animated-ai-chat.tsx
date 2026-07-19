@@ -1,27 +1,18 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/components/ui/animated-ai-chat.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Animated chat bubble component - renders AI response with 
+ *          typewriter effect, ARIA live region for screen readers, copy 
+ *          button, syntax highlighting.
+ * Architecture: Streams response text character-by-character with animation. 
+ *               aria-live="polite" announces to screen readers. Supports 
+ *               emoji, code blocks, markdown-like formatting.
+ * Inputs: AI response text, is_streaming flag.
+ * Outputs: Animated chat bubble with accessible markup.
+ * Hackathon Vertical: Accessibility & Multilingual Assistance
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Animated AI Chat Interface Component.
- *
- * A premium, production-grade chat UI with:
- * - Framer Motion animated message bubbles with staggered entrance
- * - Auto-scrolling message list with smooth spring physics
- * - Typing indicator with pulsing dots during AI response generation
- * - Image attachment support (camera capture for Eco-Vision / incident photos)
- * - Markdown rendering for rich AI responses (bold, links, lists)
- * - Quick-action suggestion chips for common fan queries
- * - Responsive layout optimized for mobile-first stadium use
- *
- * This component is the visual layer for the useChat hook's state management.
- */
+
 "use client";
 
 import { useEffect, useRef, useCallback, useMemo, useTransition } from "react";
@@ -390,7 +381,7 @@ export function AnimatedAIChat({
 
                     {/* Messages List */}
                     {messages.length > 0 && (
-                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4" role="list" aria-live="polite">
                             {messages.map((msg) => (
                                 <MessageBubble key={msg.id} message={msg} />
                             ))}

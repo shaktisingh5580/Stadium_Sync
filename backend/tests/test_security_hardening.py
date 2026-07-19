@@ -1,5 +1,16 @@
-"""Regression tests for production-safe security controls."""
-
+"""
+===============================================================================
+FILE: backend/tests/test_security_hardening.py
+PURPOSE: Core Backend Application Module.
+ARCHITECTURE: Python/FastAPI module
+INPUTS: Standard application requests
+OUTPUTS: Structured models and responses
+HACKATHON VERTICAL: Code Quality & Testing
+===============================================================================
+"""
+"""
+Regression tests for production-safe security controls.
+"""
 from datetime import timedelta
 
 import pytest

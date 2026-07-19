@@ -1,17 +1,17 @@
 """
 ===============================================================================
 File: backend/app/services/incident_service.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: Incident lifecycle management - accepts incident reports, sends to 
+         Gemini for AI triage, creates incident record, dispatches nearest 
+         volunteer, tracks resolution status.
+Architecture: Report flow: receive description → AI triage (severity, 
+             category, action) → create DB record → dispatch volunteer → 
+             broadcast alert. Resolution: update status → log completion.
+Inputs: Incident description from fan/volunteer.
+Outputs: Incident record with AI triage, volunteer dispatch, real-time alert 
+         broadcast.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — Incident Service.
-
-Handles incident reporting, AI triage, and status tracking.
 """
 
 import logging

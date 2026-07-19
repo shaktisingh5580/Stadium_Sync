@@ -1,17 +1,16 @@
 """
 ===============================================================================
 File: backend/app/models/ticket.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Ticket and seating models - defines ticket ownership, seat 
+         assignment, accessibility needs, and transit preferences.
+Architecture: Ticket (QR code, holder info, validity status), Seat (section, 
+             row, number, SVG coords), Section (seating area). Ticket links 
+             to Seat, Seat links to Section.
+Inputs: Ticket data from QR code, seating assignments.
+Outputs: Fan session context (ticket, seat, accessibility, transit), used 
+         throughout app for personalization.
+Hackathon Vertical: Security & Authentication
 ===============================================================================
-"""
-"""
-Stadium Sync — Ticket, Seat, Section, and Gate Models.
-
-These represent the core stadium topology and fan ticketing data.
 """
 
 import enum

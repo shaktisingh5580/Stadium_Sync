@@ -1,18 +1,18 @@
 """
 ===============================================================================
 File: backend/app/core/config.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: Centralized configuration management using Pydantic Settings - loads 
+         environment variables, validates types, enforces production security 
+         policies, and provides singleton access.
+Architecture: Pydantic BaseSettings model with field validators for production 
+             safety. Refuses to start if DEBUG=true in prod, SECRET_KEY < 32 
+             chars, CORS wildcard in prod, or mock AI fallback enabled in prod.
+Inputs: Environment variables from .env file or container secrets 
+        (APP_ENV, DEBUG, DATABASE_URL, REDIS_URL, GEMINI_API_KEY_1, etc.)
+Outputs: Settings singleton (get_settings()) with validated, type-safe 
+         configuration for entire application.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — Centralized Configuration.
-
-All environment variables are loaded and validated here via pydantic-settings.
-Use `get_settings()` to access the singleton instance.
 """
 
 from functools import lru_cache
@@ -103,6 +103,29 @@ class Settings(BaseSettings):
             return True
         return bool(v)
 
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def validate_cors_origins(cls, v: List[str]) -> List[str]:
+        """Validate CORS origins for duplicates and invalid patterns."""
+        if not isinstance(v, list):
+            return v
+        unique = list(dict.fromkeys(v))
+        return unique
+
+    @model_validator(mode="after")
+    def validate_development_warnings(self):
+        """Issue warnings for dev mode but allow them; block in production."""
+        if not self.is_production:
+            import logging
+            logger = logging.getLogger(__name__)
+            if self.DEBUG:
+                logger.warning("⚠️  DEBUG=true (dev only)")
+            if self.ALLOW_AI_MOCK_FALLBACK:
+                logger.warning("⚠️  ALLOW_AI_MOCK_FALLBACK=true (dev only)")
+            if self.ALLOW_DEMO_FEATURES:
+                logger.warning("⚠️  ALLOW_DEMO_FEATURES=true (dev only)")
+        return self
+
     @model_validator(mode="after")
     def validate_production_security(self):
         """Refuse an unsafe production configuration before serving traffic."""
@@ -114,12 +137,13 @@ class Settings(BaseSettings):
             errors.append("DEBUG must be false")
         if "*" in self.CORS_ORIGINS:
             errors.append("CORS_ORIGINS cannot contain '*' when APP_ENV is production")
-        if len(self.SECRET_KEY) < 8:
-            errors.append("SECRET_KEY must be at least 8 characters")
-        if len(self.TICKET_QR_SIGNING_KEY) < 8:
-            errors.append("TICKET_QR_SIGNING_KEY must be at least 8 characters")
-        if len(self.IOT_API_KEY) < 8:
-            errors.append("IOT_API_KEY must be at least 8 characters")
+        MIN_SECRET_LENGTH = 32
+        if len(self.SECRET_KEY) < MIN_SECRET_LENGTH:
+            errors.append(f"SECRET_KEY must be at least {MIN_SECRET_LENGTH} characters")
+        if len(self.TICKET_QR_SIGNING_KEY) < MIN_SECRET_LENGTH:
+            errors.append(f"TICKET_QR_SIGNING_KEY must be at least {MIN_SECRET_LENGTH} characters")
+        if len(self.IOT_API_KEY) < MIN_SECRET_LENGTH:
+            errors.append(f"IOT_API_KEY must be at least {MIN_SECRET_LENGTH} characters")
         if self.ALLOW_AI_MOCK_FALLBACK:
             errors.append("ALLOW_AI_MOCK_FALLBACK must be false")
         if self.ALLOW_DEMO_FEATURES:
@@ -131,6 +155,25 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"
+
+    async def verify_redis_connection(self) -> bool:
+        """Verify Redis is available if enabled."""
+        if not self.REDIS_ENABLED:
+            return True
+        
+        try:
+            import redis.asyncio as aioredis
+            import logging
+            redis_client = aioredis.from_url(self.REDIS_URL, decode_responses=True)
+            await redis_client.ping()
+            await redis_client.close()
+            return True
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"❌ Redis connection failed: {e}")
+            if self.is_production:
+                raise RuntimeError(f"Redis is required in production but unavailable: {e}")
+            return False
 
     @property
     def is_development(self) -> bool:

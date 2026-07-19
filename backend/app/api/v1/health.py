@@ -1,18 +1,14 @@
 """
 ===============================================================================
 File: backend/app/api/v1/health.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Health check endpoint - signals service status to Render load 
+         balancer. Checks database, Redis, and Gemini API availability.
+Architecture: GET /health → returns 200 OK if all critical dependencies 
+             available, 503 Service Unavailable if any down.
+Inputs: None (periodic health checks from load balancer).
+Outputs: Health status JSON with dependency states.
+Hackathon Vertical: Operational Intelligence
 ===============================================================================
-"""
-"""
-Stadium Sync — Health Check Endpoints.
-
-Provides liveness and readiness probes for Render deployment
-and monitoring. No rate limiting on health endpoints.
 """
 
 from datetime import datetime, timezone

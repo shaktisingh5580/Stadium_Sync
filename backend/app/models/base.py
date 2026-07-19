@@ -1,20 +1,16 @@
 """
 ===============================================================================
 File: backend/app/models/base.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: SQLAlchemy Declarative Base - parent class for all ORM models with 
+         common columns (id, created_at, updated_at) and table configuration.
+Architecture: Provides Base class that all models inherit from. Automatically 
+             adds UUID primary key, created_at timestamp (UTC), updated_at 
+             timestamp (UTC) to every table.
+Inputs: None (base class definition)
+Outputs: Base class for model definition, automatic audit timestamps on all 
+         entities.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — SQLAlchemy Base and Mixins.
-
-Provides:
-- DeclarativeBase for all models
-- TimestampMixin: auto created_at/updated_at
-- UUIDPrimaryKeyMixin: UUID primary key
 """
 
 import uuid

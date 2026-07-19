@@ -1,21 +1,20 @@
 """
 ===============================================================================
 File: backend/app/core/security.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: JWT token management - creation, verification, expiration checks, 
+         and revocation via JTI (JWT ID) tracking in Redis.
+Architecture: HMAC-SHA256 signing with configurable expiry (fan: 4h, 
+             volunteer: 12h, admin: 8h). Tokens include claims: sub (ticket_id), 
+             role, aud (audience for role isolation), jti (unique ID for 
+             revocation), iat (issued at), exp (expiration).
+Inputs: Credential data (ticket_id, name, role), optional custom expiry.
+Outputs: Encoded JWT string, decoded/verified payload, revocation capability.
+Hackathon Vertical: Security & Authentication
 ===============================================================================
-"""
-"""
-Stadium Sync — JWT Security Utilities.
-
-Handles JWT token creation, verification, and password hashing.
-Token payload carries the fan's ticket_id and seat information.
 """
 
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
@@ -23,6 +22,7 @@ from jose import JWTError, jwt
 
 from app.core.config import get_settings
 from app.core.exceptions import UnauthorizedException
+from app.core.redis_client import redis_client
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -67,6 +67,8 @@ def create_access_token(
         "exp": expire,
         "iat": datetime.now(timezone.utc),
         "iss": settings.APP_NAME,
+        "jti": str(uuid.uuid4()),
+        "aud": "stadium-sync-fan",
     })
 
     encoded_jwt = jwt.encode(
@@ -77,9 +79,9 @@ def create_access_token(
     return encoded_jwt
 
 
-def verify_token(token: str) -> Dict[str, Any]:
+async def verify_token(token: str) -> Dict[str, Any]:
     """
-    Verify and decode a JWT token.
+    Verify and decode a JWT token. Checks Redis blocklist for JTI.
 
     Args:
         token: The JWT string (from Authorization header or query param).
@@ -88,18 +90,27 @@ def verify_token(token: str) -> Dict[str, Any]:
         Decoded payload dict.
 
     Raises:
-        UnauthorizedException: If token is invalid, expired, or malformed.
+        UnauthorizedException: If token is invalid, expired, malformed, or revoked.
     """
     try:
         payload = jwt.decode(
             token,
             settings.SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
+            audience="stadium-sync-fan",
         )
 
         # Ensure required fields exist
         if "sub" not in payload:
             raise UnauthorizedException("Invalid token: missing subject")
+            
+        jti = payload.get("jti")
+        if not jti:
+            raise UnauthorizedException("Invalid token: missing JTI")
+
+        if settings.REDIS_ENABLED and redis_client:
+            if await redis_client.exists(f"revoked_token:{jti}"):
+                raise UnauthorizedException("Token has been revoked")
 
         return payload
 

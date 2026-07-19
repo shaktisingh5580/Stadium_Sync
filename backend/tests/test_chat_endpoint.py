@@ -1,4 +1,14 @@
 """
+===============================================================================
+FILE: backend/tests/test_chat_endpoint.py
+PURPOSE: Core Backend Application Module.
+ARCHITECTURE: Python/FastAPI module
+INPUTS: Standard application requests
+OUTPUTS: Structured models and responses
+HACKATHON VERTICAL: Code Quality & Testing
+===============================================================================
+"""
+"""
 Tests for the new Agentic Chat endpoint.
 """
 import pytest

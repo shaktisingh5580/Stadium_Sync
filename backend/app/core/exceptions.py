@@ -1,26 +1,17 @@
 """
 ===============================================================================
 File: backend/app/core/exceptions.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Custom HTTP exception hierarchy - maps Python exceptions to proper 
+         HTTP status codes and sanitizes error responses (no stack traces 
+         to clients, server-side logging only).
+Architecture: Exception classes inherit from FastAPI HTTPException. Each has 
+             specific status code (400, 401, 403, 404, 409, 429, 500) and 
+             message template. Central exception handler registered in main.py 
+             logs all errors server-side with request_id for debugging.
+Inputs: Exceptions raised throughout business logic and route handlers.
+Outputs: Sanitized JSON error responses to clients, full error logs server-side.
+Hackathon Vertical: Security & Authentication
 ===============================================================================
-"""
-"""
-Stadium Sync — Custom Exceptions and Error Handlers.
-
-Provides structured JSON error responses across the entire API.
-All exceptions follow the format:
-{
-    "success": false,
-    "error": {
-        "code": "ERROR_CODE",
-        "message": "Human readable message",
-        "details": { ... }  // optional
-    }
-}
 """
 
 from typing import Any, Dict, Optional

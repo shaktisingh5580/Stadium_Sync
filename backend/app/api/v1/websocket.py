@@ -1,21 +1,17 @@
 """
 ===============================================================================
 File: backend/app/api/v1/websocket.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: WebSocket manager - persistent bidirectional connections for 
+         real-time alerts (evacuation, crowd, incidents). Replaces polling 
+         for instant delivery (< 500ms latency).
+Architecture: WS /api/v1/ws?token=jwt → validate JWT → add to connection pool 
+             → subscribe to events → broadcast messages → auto-reconnect on 
+             failure.
+Inputs: JWT token for authentication, real-time events (admin broadcasts, 
+        crowd alerts, incident updates).
+Outputs: Real-time message delivery to connected fans.
+Hackathon Vertical: Real-Time Decision Support & Crowd Management
 ===============================================================================
-"""
-"""
-Stadium Sync — WebSocket Endpoint.
-
-Provides real-time updates to connected fans:
-- Crowd density changes
-- Egress route pushes
-- Incident alerts for their section
-- General notifications
 """
 
 import json
@@ -127,7 +123,7 @@ async def websocket_endpoint(
         return
 
     try:
-        payload = verify_token(token)
+        payload = await verify_token(token)
     except UnauthorizedException:
         await websocket.close(code=4001, reason="Invalid token")
         return

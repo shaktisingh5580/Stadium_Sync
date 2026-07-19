@@ -1,19 +1,16 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/components/shared/GlowButton.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Styled button component - neon glow effect, consistent theming. 
+ *          Used for Send, Submit, Call buttons across app.
+ * Architecture: Reusable button with neon glow on hover. Props: children, 
+ *               onClick, disabled state, variant (primary/secondary).
+ * Inputs: Button props (label, onClick, disabled).
+ * Outputs: Rendered button with glow styling.
+ * Hackathon Vertical: Accessibility & Code Quality
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Glow Button (Shared UI Component).
- *
- * A reusable button with a glowing hover effect and gradient border,
- * supporting primary/secondary/danger variants. Used across all panels.
- */
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 

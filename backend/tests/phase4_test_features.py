@@ -1,4 +1,14 @@
 """
+===============================================================================
+FILE: backend/tests/phase4_test_features.py
+PURPOSE: Core Backend Application Module.
+ARCHITECTURE: Python/FastAPI module
+INPUTS: Standard application requests
+OUTPUTS: Structured models and responses
+HACKATHON VERTICAL: Code Quality & Testing
+===============================================================================
+"""
+"""
 Stadium Sync — Phase 4 Test Script: Eco-Vision, Incidents, Volunteers
 
 Tests:
@@ -11,7 +21,6 @@ Tests:
   7. POST /volunteers/assignments/{id}/complete completes assignment
   8. Full end-to-end: Report → Triage → Dispatch → Complete
 """
-
 import base64
 import pytest
 from httpx import AsyncClient

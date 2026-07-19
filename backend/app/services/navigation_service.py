@@ -1,18 +1,19 @@
 """
 ===============================================================================
 File: backend/app/services/navigation_service.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Indoor navigation and routing - computes shortest paths through 
+         stadium via Dijkstra's algorithm, respects accessibility constraints, 
+         accounts for transit preference, returns SVG coordinates for rendering.
+Architecture: Build graph of stadium sections/gates/amenities → Dijkstra 
+             shortest path → filter by accessibility (no stairs if wheelchair) 
+             → filter by transit type (metro entrance vs parking) → return 
+             coordinate path.
+Inputs: Fan seat, destination (amenity/gate/transit), accessibility flag, 
+        transit preference.
+Outputs: Ordered path coordinates (svg_x, svg_y), duration estimate, POI 
+         details.
+Hackathon Vertical: Navigation & Accessibility
 ===============================================================================
-"""
-"""
-Stadium Sync — Navigation Service.
-
-Handles setting transit preferences and computing the optimal path
-from a seat to a gate on the SVG map.
 """
 
 import math

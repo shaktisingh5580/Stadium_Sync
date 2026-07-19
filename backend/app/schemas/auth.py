@@ -1,17 +1,16 @@
 """
 ===============================================================================
 File: backend/app/schemas/auth.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Authentication request/response schemas - validates QR scan input, 
+         JWT token format, and fan session deserialization.
+Architecture: Pydantic models for QRScanRequest, QRScanResponse, 
+             TokenRefreshResponse, FanSession with type validation and 
+             field constraints (max_length, regex, etc.).
+Inputs: QR payload (JSON string with ticket_id, match_id, checksum).
+Outputs: Validated FanSession with ticket, seat, accessibility, transit data 
+         for JWT payload and API responses.
+Hackathon Vertical: Security & Authentication
 ===============================================================================
-"""
-"""
-Stadium Sync — Auth Schemas.
-
-Pydantic models for QR ticket scanning, JWT session, and token management.
 """
 
 from datetime import datetime
@@ -61,38 +60,38 @@ class SectionInfo(BaseModel):
 
 class FanSession(BaseModel):
     """Complete fan session data returned after authentication."""
-    ticket_id: str
-    holder_name: str
-    match_id: str
-    seat: SeatInfo
-    transit_choice: Optional[str] = None
-    needs_accessibility: bool = False
-    is_scanned: bool = True
+    ticket_id: str = Field(..., description="Unique ticket identifier", examples=["TICKET-12345"])
+    holder_name: str = Field(..., description="Name of the fan holding the ticket", examples=["John Doe"])
+    match_id: str = Field(..., description="ID of the match the ticket is for", examples=["MATCH-101"])
+    seat: SeatInfo = Field(..., description="Detailed seat information including SVG coordinates")
+    transit_choice: Optional[str] = Field(None, description="Fan's chosen transit method to the stadium", examples=["metro"])
+    needs_accessibility: bool = Field(False, description="Whether the fan requires accessible routing")
+    is_scanned: bool = Field(True, description="Whether the ticket has been scanned at the gate")
 
 
 # ── Auth Responses ──
 
 class QRScanResponse(BaseModel):
     """Response after successful QR scan authentication."""
-    token: str
-    token_type: str = "bearer"
-    expires_at: datetime
-    fan: FanSession
+    token: str = Field(..., description="JWT access token for API authentication")
+    token_type: str = Field("bearer", description="Token type, always 'bearer'")
+    expires_at: datetime = Field(..., description="Timestamp when the token expires")
+    fan: FanSession = Field(..., description="The fan's active session data")
 
 
 class MeResponse(BaseModel):
     """Response for GET /auth/me — current session data."""
-    ticket_id: str
-    holder_name: str
-    match_id: str
-    role: str
-    seat: dict
-    transit_choice: Optional[str] = None
-    needs_accessibility: bool = False
+    ticket_id: str = Field(..., description="Unique ticket identifier")
+    holder_name: str = Field(..., description="Name of the fan holding the ticket")
+    match_id: str = Field(..., description="ID of the match")
+    role: str = Field(..., description="User role, e.g. 'fan' or 'staff'")
+    seat: dict = Field(..., description="Seat coordinates and details")
+    transit_choice: Optional[str] = Field(None, description="Selected transit choice")
+    needs_accessibility: bool = Field(False, description="Whether the fan requires accessible routing")
 
 
 class TokenRefreshResponse(BaseModel):
     """Response for POST /auth/refresh."""
-    token: str
-    token_type: str = "bearer"
-    expires_at: datetime
+    token: str = Field(..., description="New JWT access token")
+    token_type: str = Field("bearer", description="Token type, always 'bearer'")
+    expires_at: datetime = Field(..., description="Timestamp when the new token expires")

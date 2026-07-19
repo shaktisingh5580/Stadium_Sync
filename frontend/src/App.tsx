@@ -1,24 +1,17 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/App.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Root React component - orchestrates route logic, authentication 
+ *          state, WebSocket initialization, theme provider setup.
+ * Architecture: Central component tree orchestrator. Manages JWT token 
+ *               (sessionStorage), initializes WebSocket, conditional rendering 
+ *               based on auth role (fan vs admin).
+ * Inputs: JWT token from sessionStorage, route/page context.
+ * Outputs: Rendered UI (FanInterface or AdminDashboard) based on auth state.
+ * Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Root Application Component.
- *
- * Orchestrates the top-level authentication flow:
- * 1. If no JWT token exists in sessionStorage, renders the QRScanner for ticket-based login.
- * 2. Once authenticated, transitions to the StadiumChat AI concierge interface.
- * 3. If `?admin=true` query param is present, renders the AdminDashboard (Organizer Command Center).
- *
- * Uses React.lazy + Suspense for code-splitting the Chat and Admin bundles,
- * and Framer Motion's AnimatePresence for smooth page transitions.
- */
+
 import { lazy, Suspense, useState, useEffect } from 'react';
 import { QRScanner } from '@/components/auth/QRScanner';
 import { cn } from '@/lib/utils';
@@ -48,15 +41,8 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
-  // Check if already authenticated on mount or if admin demo bypass is used
+  // Check if already authenticated on mount
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('admin') === 'true') {
-      setIsAuthenticated(true);
-      setIsAdmin(true);
-      return;
-    }
-
     const token = sessionStorage.getItem('stadium_sync_token');
     if (token) {
       setIsAuthenticated(true);

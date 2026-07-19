@@ -1,33 +1,29 @@
 """
 ===============================================================================
 File: backend/app/api/v1/auth.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Authentication endpoints - QR scan to JWT issuance, session retrieval, 
+         token refresh for long-duration matches.
+Architecture: POST /scan-ticket (QR validation → JWT), GET /me (session info), 
+             POST /refresh (extend expiry). All responses include fan context 
+             (seat, accessibility, transit).
+Inputs: QR payload, optional token refresh.
+Outputs: JWT tokens with fan session, user info, expiration times.
+Hackathon Vertical: Security & Authentication
 ===============================================================================
-"""
-"""
-Stadium Sync — Auth API Routes.
-
-Endpoints:
-    POST /api/v1/auth/scan-ticket   — Scan QR → validate → JWT
-    GET  /api/v1/auth/me            — Get current session
-    POST /api/v1/auth/refresh       — Refresh JWT token
 """
 
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
 from app.core.config import get_settings
+from app.core.redis_client import redis_client
 
-from app.core.rate_limiter import limiter
+from app.core.rate_limiter import limiter, check_ticket_abuse
 from app.core.security import (
     create_access_token,
     is_token_expiring_soon,
@@ -59,11 +55,11 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post(
     "/scan-ticket",
-    response_model=None,
+    response_model=dict,
     summary="Scan QR ticket and authenticate",
     description=(
         "Decode the QR code payload, validate the ticket against the database, "
-        "and return a JWT access token with the fan's seat and section info."
+        "and return a JWT access token with the fan's session info."
     ),
 )
 @limiter.limit(settings.RATE_LIMIT_AUTH)
@@ -83,20 +79,56 @@ async def scan_ticket(
     5. Create JWT with session data
     6. Return token + fan session
     """
+    if not body.qr_payload or len(body.qr_payload) > 1024:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payload signature")
+    
     # Step 1-2: Decode and verify QR payload
-    qr_data = decode_qr_payload(body.qr_payload)
-    logger.info(f"QR scanned: ticket={qr_data['ticket_id']}, match={qr_data['match_id']}")
+    try:
+        qr_data = decode_qr_payload(body.qr_payload)
+    except Exception as e:
+        logger.error(f"Failed to decode QR: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Malformed security token")
+
+    ticket_id = qr_data['ticket_id']
+    match_id = qr_data['match_id']
+
+    if not await check_ticket_abuse(ticket_id):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Ticket abuse detected. Too many scans.")
+
+    if settings.REDIS_ENABLED and redis_client:
+        replay_key = f"ticket_scan:{ticket_id}:{match_id}"
+        if await redis_client.exists(replay_key):
+            logger.warning(f"🚨 Replay attack detected: {ticket_id}")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ticket scan attempted too quickly; possible replay attack")
+        await redis_client.setex(replay_key, 60, "scanned")
+
+    logger.info(f"QR scanned: ticket={ticket_id}, match={match_id}")
 
     # Step 3: Validate ticket
-    ticket = await validate_ticket(db, qr_data["ticket_id"], qr_data["match_id"])
+    ticket = await validate_ticket(db, ticket_id, match_id)
 
     # Step 4: Build fan session
     fan_session = build_fan_session(ticket)
 
     # Step 5: Mark ticket as scanned
     await mark_ticket_scanned(db, ticket)
+    
+    import uuid
+    from app.models.audit import AuditLog
+    audit_entry = AuditLog(
+        id=str(uuid.uuid4()),
+        action="ticket_scanned",
+        actor_id=ticket.id,
+        actor_type="fan",
+        resource_id=ticket.id,
+        resource_type="ticket",
+        details={"match_id": ticket.match_id}
+    )
+    db.add(audit_entry)
+    # The transaction will be committed by the get_db dependency
+    logger.info(f"✅ Audit logged: ticket {ticket_id} scanned by {fan_session.holder_name}")
 
-    # Step 6: Create JWT
+    # Step 6: Create JWT (Seat info removed from JWT to prevent data leak)
     expires_delta = timedelta(minutes=settings.JWT_EXPIRATION_MINUTES)
     expires_at = datetime.now(timezone.utc) + expires_delta
 
@@ -105,9 +137,6 @@ async def scan_ticket(
             "sub": fan_session.ticket_id,
             "holder_name": fan_session.holder_name,
             "match_id": fan_session.match_id,
-            "seat": fan_session.seat.model_dump(),
-            "transit_choice": fan_session.transit_choice,
-            "needs_accessibility": fan_session.needs_accessibility,
             "role": "fan",
         },
         expires_delta=expires_delta,
@@ -130,24 +159,37 @@ async def scan_ticket(
 
 @router.get(
     "/me",
-    response_model=None,
+    response_model=dict,
     summary="Get current session info",
-    description="Returns the authenticated fan's session data from their JWT.",
+    description="Returns the authenticated fan's session data with real-time seat info.",
 )
 @limiter.limit(settings.RATE_LIMIT_DEFAULT)
 async def get_me(
     request: Request,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Return the current user's session data from their JWT payload."""
+    """Return the current user's session data fetching fresh data from DB."""
+    ticket_id = current_user["sub"]
+    
+    # Fetch fresh ticket + seat info from DB
+    ticket = await validate_ticket(
+        db, 
+        ticket_id, 
+        current_user.get("match_id", "")
+    )
+    
+    # Build fresh session with current DB state
+    fan_session = build_fan_session(ticket)
+    
     me = MeResponse(
-        ticket_id=current_user["sub"],
-        holder_name=current_user.get("holder_name", ""),
-        match_id=current_user.get("match_id", ""),
-        role=current_user.get("role", "fan"),
-        seat=current_user.get("seat", {}),
-        transit_choice=current_user.get("transit_choice"),
-        needs_accessibility=current_user.get("needs_accessibility", False),
+        ticket_id=fan_session.ticket_id,
+        holder_name=fan_session.holder_name,
+        match_id=fan_session.match_id,
+        role="fan",
+        seat=fan_session.seat.model_dump(),
+        transit_choice=fan_session.transit_choice,
+        needs_accessibility=fan_session.needs_accessibility,
     )
 
     return {
@@ -187,9 +229,6 @@ async def refresh_token(
             "sub": current_user["sub"],
             "holder_name": current_user.get("holder_name", ""),
             "match_id": current_user.get("match_id", ""),
-            "seat": current_user.get("seat", {}),
-            "transit_choice": current_user.get("transit_choice"),
-            "needs_accessibility": current_user.get("needs_accessibility", False),
             "role": current_user.get("role", "fan"),
         },
         expires_delta=expires_delta,

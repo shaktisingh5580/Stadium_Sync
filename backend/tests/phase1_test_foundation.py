@@ -1,4 +1,14 @@
 """
+===============================================================================
+FILE: backend/tests/phase1_test_foundation.py
+PURPOSE: Core Backend Application Module.
+ARCHITECTURE: Python/FastAPI module
+INPUTS: Standard application requests
+OUTPUTS: Structured models and responses
+HACKATHON VERTICAL: Code Quality & Testing
+===============================================================================
+"""
+"""
 Stadium Sync — Phase 1 Test Script: Foundation Verification
 
 Run: pytest tests/phase1_test_foundation.py -v
@@ -17,7 +27,6 @@ Tests:
  11. Validation error returns structured field errors
  12. Database tables exist after startup
 """
-
 import pytest
 from datetime import timedelta
 from httpx import AsyncClient

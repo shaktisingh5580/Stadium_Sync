@@ -1,21 +1,17 @@
 """
 ===============================================================================
 File: backend/app/services/egress_service.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Evacuation and exit route computation - computes personalized exit 
+         paths for each fan, respects accessibility constraints, balances 
+         load across gates, triggered by emergency or anomaly detection.
+Architecture: For each fan: get seat → find nearest gate (Dijkstra) → if 
+             wheelchair: filter stairs/escalators → compute ETA → add route 
+             to response queue. Load-balance: cap fans per gate.
+Inputs: Connected fan list with seats, accessibility flags; emergency trigger.
+Outputs: Personalized routes to nearest appropriate gate, ETA countdowns, 
+         WebSocket broadcasts.
+Hackathon Vertical: Real-Time Decision Support & Accessibility
 ===============================================================================
-"""
-"""
-Stadium Sync — Egress Agent Service.
-
-The egress agent is triggered at the 80th minute of a match.
-It computes personalized egress routes for all active fans and
-pushes them via WebSocket.
-
-State machine: IDLE → COMPUTING → ACTIVE → COMPLETED
 """
 
 import logging

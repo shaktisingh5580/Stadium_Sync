@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * FILE: frontend/src/components/__tests__/App.test.tsx
+ * PURPOSE: Provides core functionality and logic for this module.
+ * ARCHITECTURE: React/Vite/TypeScript component
+ * INPUTS: Standard module props or API responses
+ * OUTPUTS: Rendered DOM or internal logic
+ * HACKATHON VERTICAL: Fan Experience & Navigation
+ * ============================================================================
+ */
 import React from 'react';
 /**
  * ============================================================================

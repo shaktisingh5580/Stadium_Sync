@@ -1,20 +1,17 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/main.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: React application bootstrap - mounts React App component to DOM 
+ *          (#root) and initializes React Strict Mode for dev-only error 
+ *          checking.
+ * Architecture: Entry point for Vite dev server and production build. Sets up 
+ *               StrictMode wrapper to catch side effects and state mutations.
+ * Inputs: React App component, DOM element with id="root".
+ * Outputs: React application mounted and rendering.
+ * Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Application Entry Point.
- *
- * Mounts the root React component in StrictMode for development warnings.
- * Imports the global CSS design system before any component renders.
- * This file is loaded by Vite's module system via index.html.
- */
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

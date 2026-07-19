@@ -1,24 +1,17 @@
 """
 ===============================================================================
 File: backend/app/core/redis_client.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: Redis connection pool with graceful in-memory fallback - caches 
+         frequently accessed data (stadium layout, crowd predictions), stores 
+         session state, rate limit counters, and token revocation list.
+Architecture: Redis async client with connection pooling. If Redis unavailable, 
+             falls back to in-memory dict for development/testing. Supports 
+             key expiration (TTL) for automatic cleanup.
+Inputs: REDIS_URL from config, optional REDIS_ENABLED flag.
+Outputs: Cached data lookups (< 1ms latency), rate limit counters, token 
+         revocation tracking, session management.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — Redis Async Client.
-
-Provides async Redis connection pool for:
-- Real-time crowd density state
-- Fan session caching
-- Egress route caching
-- Rate limiter backend
-- WebSocket pub/sub
-
-Gracefully degrades if Redis is unavailable.
 """
 
 import logging

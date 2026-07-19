@@ -1,20 +1,16 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/components/shared/TabButton.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Tab button component - toggles between tabs in sidebar 
+ *          (Nav, Transit, Incidents, Eco-Vision). Consistent styling.
+ * Architecture: Button variant with active/inactive state styling. Props: 
+ *               label, isActive, onClick.
+ * Inputs: Tab selection.
+ * Outputs: Rendered tab button with active state styling.
+ * Hackathon Vertical: Accessibility & Code Quality
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Tab Button (Shared UI Component).
- *
- * An accessible tab button with active/inactive states and icon support.
- * Used in the Sidebar for switching between Transit, Incident, and Eco-Vision panels.
- * Includes proper ARIA attributes for screen reader compatibility.
- */
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 

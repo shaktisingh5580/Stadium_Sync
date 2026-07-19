@@ -1,18 +1,14 @@
 """
 ===============================================================================
 File: backend/app/api/v1/eco_vision.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Sustainability: waste classification API - camera image → Gemini 
+         Vision classifies waste type → routes to nearest bin with eco facts.
+Architecture: POST /eco-vision/classify (base64 image) → Gemini Vision → 
+             returns waste classification + bin routing.
+Inputs: Base64-encoded waste image.
+Outputs: Waste type, bin color, nearest bin location, environmental fact.
+Hackathon Vertical: Sustainability
 ===============================================================================
-"""
-"""
-Stadium Sync — Eco-Vision API Routes.
-
-Endpoints:
-    POST /api/v1/eco-vision/classify  — Classify waste from a photo
 """
 
 from typing import Any, Dict

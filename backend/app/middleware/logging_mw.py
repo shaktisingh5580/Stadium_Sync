@@ -1,18 +1,16 @@
 """
 ===============================================================================
 File: backend/app/middleware/logging_mw.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: Structured request/response logging - logs all API calls with method, 
+         path, status, duration, response size. Sanitizes sensitive headers 
+         (Authorization, API keys) before logging.
+Architecture: BaseHTTPMiddleware that wraps all requests. Logs method, path, 
+             status code, duration (ms), response size. Stores timing in 
+             response headers for observability.
+Inputs: All HTTP requests passing through the application.
+Outputs: Structured log entries for operational visibility and debugging.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — Structured Request Logging Middleware.
-
-Logs every request with method, path, status, and duration.
-Uses structured format for easy parsing in production logs.
 """
 
 import logging

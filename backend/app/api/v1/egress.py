@@ -1,20 +1,14 @@
 """
 ===============================================================================
 File: backend/app/api/v1/egress.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Exit route computation and evacuation - computes personalized routes, 
+         respects accessibility, broadcasts emergency evacuation.
+Architecture: GET /egress/route (compute route to nearest gate), POST 
+             /egress/trigger (staff-initiated evacuation).
+Inputs: Fan seat, accessibility flag, evacuation trigger.
+Outputs: Exit route with ETA, evacuation broadcasts via WebSocket.
+Hackathon Vertical: Real-Time Decision Support & Accessibility
 ===============================================================================
-"""
-"""
-Stadium Sync — Egress Agent API Routes.
-
-Endpoints:
-    POST /api/v1/egress/trigger           — Trigger egress agent at 80th minute
-    GET  /api/v1/egress/state/{match_id}  — Get agent state
-    GET  /api/v1/egress/route             — Get fan's pre-computed egress route
 """
 
 from typing import Any, Dict

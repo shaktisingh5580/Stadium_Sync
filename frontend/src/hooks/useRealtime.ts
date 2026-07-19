@@ -1,25 +1,18 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/hooks/useRealtime.ts
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: WebSocket connection hook - manages persistent bidirectional 
+ *          connection, subscribes to real-time events (evacuation, crowd, 
+ *          incidents), auto-reconnects on failure.
+ * Architecture: useRealtime() hook manages WebSocket lifecycle. Emits events 
+ *               via callback; auto-reconnect with exponential backoff on 
+ *               connection failure.
+ * Inputs: JWT token, event callback function.
+ * Outputs: WebSocket connection state, event handler.
+ * Hackathon Vertical: Real-Time Decision Support & Crowd Management
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Real-Time WebSocket Hook (useRealtime).
- *
- * Manages a persistent WebSocket connection to the backend for real-time updates:
- * - Egress route pushes (personalized exit routes at the 80th minute)
- * - Emergency evacuation broadcasts (stadium-wide alerts)
- * - Flash sale notifications (AI-driven vendor promotions)
- * - Server-pushed chat messages (incident resolution updates)
- *
- * Features automatic reconnection with 5-second backoff, 30-second keep-alive
- * heartbeats, and proper cleanup on component unmount to prevent memory leaks.
- */
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface EgressData {

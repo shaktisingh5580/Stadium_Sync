@@ -1,18 +1,15 @@
 """
 ===============================================================================
 File: backend/app/models/__init__.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: Package initialization for SQLAlchemy ORM models - centralizes model 
+         exports and Base class for easy importing throughout codebase.
+Architecture: Exports Base class (declarative base) and all model classes 
+             (Ticket, Section, Incident, Crowd, Volunteer, etc.) to avoid 
+             circular imports.
+Inputs: None (package initialization)
+Outputs: Centralized access to ORM models and Base for schema definition.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — Model Registry.
-
-Imports all models so SQLAlchemy metadata can discover them
-for table creation and Alembic migrations.
 """
 
 from app.models.base import Base  # noqa: F401

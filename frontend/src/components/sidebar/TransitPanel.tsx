@@ -1,21 +1,18 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/components/sidebar/TransitPanel.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Transit selection UI - fan chooses transportation method 
+ *          (metro/bus/rideshare/parking). Stores preference in state and 
+ *          backend for route optimization.
+ * Architecture: Four buttons (Metro, Bus, Rideshare, Parking) with active 
+ *               state. On selection: POST preference → backend persists → 
+ *               updates route computation.
+ * Inputs: Transit preference selection.
+ * Outputs: Stored preference in state and DB, updated exit routes.
+ * Hackathon Vertical: Transportation & Navigation
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Transit Method Selection Panel.
- *
- * Allows fans to select their transportation preference (Metro, Bus, Rideshare, Parking).
- * The choice is persisted via the /navigation/transit API and used by the egress agent
- * to compute the optimal exit gate closest to the fan's chosen transit stop.
- * Updates trigger a map re-render showing the corresponding gate highlighted.
- */
+
 import React, { useState } from 'react';
 import { GlowCard } from '../shared/GlowCard';
 import { GlowButton } from '../shared/GlowButton';

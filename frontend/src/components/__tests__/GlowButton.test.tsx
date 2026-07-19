@@ -1,21 +1,12 @@
 /**
  * ============================================================================
- * File: frontend/src/components/__tests__/GlowButton.test.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * FILE: frontend/src/components/__tests__/GlowButton.test.tsx
+ * PURPOSE: Stadium Sync — GlowButton Component Tests. Verifies the shared GlowButton component: - Renders children text correctly - Applies disabled state - Handles click events - Has proper CSS classes for glow effect
+ * ARCHITECTURE: React/Vite/TypeScript component
+ * INPUTS: Standard module props or API responses
+ * OUTPUTS: Rendered DOM or internal logic
+ * HACKATHON VERTICAL: Fan Experience & Navigation
  * ============================================================================
- */
-/**
- * Stadium Sync — GlowButton Component Tests.
- *
- * Verifies the shared GlowButton component:
- * - Renders children text correctly
- * - Applies disabled state
- * - Handles click events
- * - Has proper CSS classes for glow effect
  */
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';

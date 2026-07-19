@@ -1,17 +1,17 @@
 """
 ===============================================================================
 File: backend/app/api/v1/admin.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: Admin command center API - provides operational dashboard, AI copilot, 
+         emergency evacuation triggers, computer vision webhook intake, flash 
+         sale targeting.
+Architecture: Protected routes (admin-only). Endpoints: /admin/state (full 
+             dashboard), /admin/chat (Gemini with context), /admin/evacuate 
+             (broadcast routes), /admin/cv-webhook (edge node analysis).
+Inputs: Admin queries, evacuation triggers, CV frames from edge cameras.
+Outputs: Operational state (crowd density, incidents, volunteers), AI 
+         recommendations, emergency broadcasts.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — Admin API Router.
-
-Endpoints for the Organizer Command Center.
 """
 
 import random

@@ -1,13 +1,13 @@
 """
-Stadium Sync — Test Fixtures (conftest.py)
-
-Shared fixtures for all test phases:
-- Test database (SQLite in-memory)
-- Test FastAPI client (httpx AsyncClient)
-- Auth helper (generate test JWTs)
-- Mock Gemini client
+===============================================================================
+FILE: backend/tests/conftest.py
+PURPOSE: Stadium Sync — Test Fixtures (conftest.py) Shared fixtures for all test phases: - Test database (SQLite in-memory) - Test FastAPI client (httpx AsyncClient) - Auth helper (generate test JWTs) - Mock Gemini client
+ARCHITECTURE: Python/FastAPI module
+INPUTS: Standard application requests
+OUTPUTS: Structured models and responses
+HACKATHON VERTICAL: Operational Intelligence & Real-Time Decision Support
+===============================================================================
 """
-
 import os
 import asyncio
 from typing import AsyncGenerator, Dict, Any

@@ -1,20 +1,16 @@
 """
 ===============================================================================
 File: backend/app/main.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: FastAPI application factory - creates and configures the entire 
+         backend API with middleware, routes, and lifecycle management.
+Architecture: Central orchestrator that initializes all infrastructure 
+             (database, Redis, rate limiter, exception handlers) and registers 
+             all route routers with versioning. Manages startup/shutdown lifecycle.
+Inputs: None (FastAPI entry point via uvicorn app.main:app)
+Outputs: Fully configured FastAPI application instance with all middleware, 
+         routes, exception handlers, and lifecycle hooks enabled.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — FastAPI Application Factory.
-
-Creates and configures the FastAPI application with all middleware,
-exception handlers, routes, and lifecycle hooks.
-
-Deployment: Render runs `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 """
 
 import logging
@@ -31,7 +27,7 @@ from app.core.rate_limiter import setup_rate_limiter
 from app.core.redis_client import close_redis, init_redis
 from app.middleware.logging_mw import LoggingMiddleware
 from app.middleware.request_id import RequestIDMiddleware
-from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware, SanitizingLoggingMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -105,16 +101,15 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    # The API uses Authorization headers, not browser cookies. Keeping this
-    # false prevents cross-origin credential leakage.
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.CORS_ORIGINS if settings.CORS_ORIGINS else ["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
     expose_headers=["X-Request-ID", "X-Response-Time", "X-RateLimit-Limit"],
 )
 
-# Structured logging
+# Structured logging (without secrets)
+app.add_middleware(SanitizingLoggingMiddleware)
 app.add_middleware(LoggingMiddleware)
 
 # Request ID injection
@@ -124,9 +119,14 @@ app.add_middleware(RequestIDMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # ── Rate Limiter ──
-setup_rate_limiter(app)
+try:
+    setup_rate_limiter(app)
+except Exception as e:
+    logger.warning(f"Rate limiter init failed: {e}")
+    if settings.is_production:
+        raise RuntimeError("Rate limiter is required in production but failed to initialize")
 
-# ── Exception Handlers ──
+# ── Exception Handlers (must register BEFORE route inclusion) ──
 register_exception_handlers(app)
 
 # ── Routes ──
@@ -139,12 +139,20 @@ app.include_router(v1_router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/", include_in_schema=False)
 async def root():
-    """Root endpoint — redirects to docs."""
+    """
+    Root endpoint — service info and documentation links.
+    """
+    from datetime import datetime, timezone
     return {
         "service": "Stadium Sync API",
         "version": "1.0.0",
+        "build_timestamp": datetime.now(timezone.utc).isoformat(),
+        "environment": settings.APP_ENV,
         "docs": "/docs",
+        "redoc": "/redoc",
+        "openapi_schema": "/api/openapi.json",
         "health": f"{settings.API_V1_PREFIX}/health",
+        "security_policy": "/.well-known/security.txt",
     }
 
 

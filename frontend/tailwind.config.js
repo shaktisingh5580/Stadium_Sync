@@ -1,4 +1,13 @@
-/** @type {import('tailwindcss').Config} */
+/**
+ * ============================================================================
+ * FILE: frontend/tailwind.config.js
+ * PURPOSE: @type {import('tailwindcss').Config}
+ * ARCHITECTURE: React/Vite/TypeScript component
+ * INPUTS: Standard module props or API responses
+ * OUTPUTS: Rendered DOM or internal logic
+ * HACKATHON VERTICAL: Fan Experience & Navigation
+ * ============================================================================
+ */
 export default {
   darkMode: ["class"],
   content: [

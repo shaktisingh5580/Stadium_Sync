@@ -1,4 +1,14 @@
 """
+===============================================================================
+FILE: backend/tests/phase2_test_auth.py
+PURPOSE: Core Backend Application Module.
+ARCHITECTURE: Python/FastAPI module
+INPUTS: Standard application requests
+OUTPUTS: Structured models and responses
+HACKATHON VERTICAL: Code Quality & Testing
+===============================================================================
+"""
+"""
 Stadium Sync — Phase 2 Test Script: Auth & QR Ticket Scanning
 
 Tests:
@@ -12,7 +22,6 @@ Tests:
   8. GET /me without token returns 401
   9. POST /refresh returns new token
 """
-
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession

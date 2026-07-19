@@ -1,21 +1,15 @@
 """
 ===============================================================================
 File: backend/app/api/v1/incidents.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: Incident reporting API - fans/volunteers report problems, Gemini AI 
+         triages (severity, category, action), dispatches volunteer, broadcasts 
+         alert.
+Architecture: POST /incidents (report) → Gemini triage → create DB record → 
+             dispatch → broadcast.
+Inputs: Incident description, category hint.
+Outputs: Incident record with AI triage, dispatch action, alert broadcast.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — Incident API Routes.
-
-Endpoints:
-    POST /api/v1/incidents/              — Report a new incident
-    GET  /api/v1/incidents/              — List incidents (volunteer/admin)
-    GET  /api/v1/incidents/{incident_id} — Get incident details
-    POST /api/v1/incidents/{incident_id}/dispatch — Dispatch volunteer
 """
 
 from typing import Any, Dict, Optional

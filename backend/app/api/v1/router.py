@@ -1,18 +1,14 @@
 """
 ===============================================================================
 File: backend/app/api/v1/router.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: V1 API router aggregator - includes all v1 endpoint modules 
+         (health, auth, chat, incidents, crowd, admin, etc.) with prefixes 
+         and tags for Swagger docs.
+Architecture: Creates APIRouter, includes all v1 routes with /api/v1 prefix.
+Inputs: None (route registration aggregation)
+Outputs: Combined v1_router for main.py inclusion.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — V1 API Router Aggregator.
-
-Includes all v1 route modules with their prefixes and tags.
-New modules are added here as they are built in each phase.
 """
 
 from fastapi import APIRouter

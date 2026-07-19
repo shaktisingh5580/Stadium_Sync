@@ -1,17 +1,15 @@
 """
 ===============================================================================
 File: backend/app/schemas/chat.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Chat API schemas - validates fan queries and structures AI responses 
+         with UI action commands (show route, show POI, etc.).
+Architecture: ChatRequest (query + context), ChatResponse (text + UI action). 
+             Constrains query length (< 500 chars) and UI actions to specific 
+             enum values.
+Inputs: Fan natural language query with context (seat, accessibility, etc.).
+Outputs: AI response with structured UI action for frontend to render.
+Hackathon Vertical: Navigation & Multilingual Assistance
 ===============================================================================
-"""
-"""
-Stadium Sync — Chat Schemas.
-
-Pydantic models for the agentic chat endpoint.
 """
 
 from typing import Any, Dict, List, Optional

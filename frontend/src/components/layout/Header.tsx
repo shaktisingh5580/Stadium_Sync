@@ -1,19 +1,16 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/components/layout/Header.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Navigation header - displays fan name, match info, token expiry 
+ *          warning, logout button.
+ * Architecture: Always-visible header at top. Shows current fan name, match 
+ *               name/time, token countdown (e.g., "Expires in 5 min"), logout.
+ * Inputs: User context (name), JWT expiry time, match info.
+ * Outputs: Header UI with user state and logout action.
+ * Hackathon Vertical: Navigation & Authentication
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Application Header Component.
- *
- * Displays the Stadium Sync logo, match information, and connection status.
- * Provides a logout action that clears the JWT session and reloads the app.
- */
+
 import React from 'react';
 import { Activity } from 'lucide-react';
 

@@ -1,24 +1,16 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/api/admin.ts
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Admin-specific API functions - getAdminState, sendAdminChat, 
+ *          triggerEvacuation, uploadCVFrame.
+ * Architecture: Wrapper functions for admin endpoints. Requires admin role 
+ *               in JWT (enforced server-side).
+ * Inputs: Admin query parameters, state request body.
+ * Outputs: Admin response data (dashboard state, AI recommendations, etc.).
+ * Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Admin / Organizer API Functions.
- *
- * Provides typed API calls for the Organizer Command Center (AdminDashboard):
- * - getAdminState — Fetches the digital twin state (incidents + crowd heatmap + predictions)
- * - sendAdminChat — Chats with the Admin Copilot AI using live stadium context
- * - triggerEvacuation — Broadcasts an emergency evacuation to all connected fans
- * - evaluatePromotions — AI-driven flash sale targeting based on crowd density
- * - resolveIncident — Marks an incident as resolved
- * - triggerCVWebhook — Simulates a Computer Vision edge-node event
- */
+
 import { apiClient } from './client';
 
 export interface Incident {

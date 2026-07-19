@@ -1,24 +1,16 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/api/index.ts
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: API function wrappers - typed functions for backend endpoints 
+ *          (scanTicket, sendChat, getState, etc.).
+ * Architecture: Wraps Axios calls with type safety. Each function corresponds 
+ *               to backend endpoint, with type-checked params/return values.
+ * Inputs: Endpoint-specific parameters (queries, bodies).
+ * Outputs: Typed Promise responses matching backend schemas.
+ * Hackathon Vertical: Code Quality & Security
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Fan-Facing API Functions (Barrel Export).
- *
- * Exports all API calls available to fan-side components:
- * - loginWithQR / fetchFanSession — QR-code ticket authentication
- * - updateTransitMethod / fetchEgressRoute / triggerEgressSimulation — Egress & navigation
- * - classifyWasteImage — Eco-Vision AI waste classification
- * - reportIncident — Fan incident reporting with AI triage
- * - fetchStadiumCrowdMap — Real-time crowd density heatmap
- * - sendChatMessage — Agentic AI concierge chat (Google Gemini)
- */
+
 import { apiClient } from './client';
 import type { EcoVisionResult } from '../types';
 

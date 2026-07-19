@@ -1,17 +1,17 @@
 """
 ===============================================================================
 File: backend/app/models/crowd.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Crowd density and IoT data models - tracks real-time crowd counts 
+         per section, predicts density 15 minutes ahead using linear regression, 
+         and broadcasts congestion alerts.
+Architecture: Three main tables: CrowdDensity (current snapshot), 
+             CrowdPrediction (ML forecast), CrowdAlert (broadcast message). 
+             Data updated every 30s from IoT sensors.
+Inputs: IoT turnstile counts (POST /crowd/ingest), historical density data.
+Outputs: Real-time heatmap for frontend, crowdPrediction alerts, WebSocket 
+         broadcasts to fans in congested sections.
+Hackathon Vertical: Crowd Management & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — Crowd Density and Egress Route Models.
-
-Tracks real-time crowd snapshots from IoT sensors and computed exit routes.
 """
 
 import enum

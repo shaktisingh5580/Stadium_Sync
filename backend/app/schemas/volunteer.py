@@ -1,17 +1,15 @@
 """
 ===============================================================================
 File: backend/app/schemas/volunteer.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Volunteer schemas - validates location updates and structures 
+         dispatch/assignment responses.
+Architecture: VolunteerLocationUpdate (lat, lon, timestamp), DispatchRequest 
+             (incident_id, volunteer_id), VolunteerResponse (volunteer info 
+             for admin dashboard).
+Inputs: GPS coordinates from volunteer mobile app.
+Outputs: Volunteer position for dispatch routing and admin visibility.
+Hackathon Vertical: Real-Time Decision Support & Crowd Management
 ===============================================================================
-"""
-"""
-Stadium Sync — Volunteer Schemas.
-
-Pydantic models for volunteer management and dispatch.
 """
 
 from datetime import datetime

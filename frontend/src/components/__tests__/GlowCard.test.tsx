@@ -1,20 +1,12 @@
 /**
  * ============================================================================
- * File: frontend/src/components/__tests__/GlowCard.test.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * FILE: frontend/src/components/__tests__/GlowCard.test.tsx
+ * PURPOSE: Stadium Sync — GlowCard Component Tests. Verifies the shared GlowCard container component: - Renders children content - Applies glow-card CSS class - Supports custom className prop
+ * ARCHITECTURE: React/Vite/TypeScript component
+ * INPUTS: Standard module props or API responses
+ * OUTPUTS: Rendered DOM or internal logic
+ * HACKATHON VERTICAL: Fan Experience & Navigation
  * ============================================================================
- */
-/**
- * Stadium Sync — GlowCard Component Tests.
- *
- * Verifies the shared GlowCard container component:
- * - Renders children content
- * - Applies glow-card CSS class
- * - Supports custom className prop
  */
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';

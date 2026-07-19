@@ -1,17 +1,17 @@
 """
 ===============================================================================
 File: backend/app/models/incident.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: Incident tracking and AI triage - models incident reports (medical, 
+         security, facilities) with Gemini AI categorization, severity 
+         classification, and resolution tracking.
+Architecture: Incident table with status workflow (reported → triaged → 
+             dispatched → resolved). IncidentUpdate tracks escalation history. 
+             Links to Gemini triage result (severity, category, action).
+Inputs: Fan/volunteer incident reports with description.
+Outputs: Incident records with AI-determined severity, category, and dispatch 
+         action for volunteer assignment.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — Incident and Incident Update Models.
-
-Tracks fan-reported issues, AI triage results, and resolution updates.
 """
 
 import enum

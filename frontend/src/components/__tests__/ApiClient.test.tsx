@@ -1,21 +1,12 @@
 /**
  * ============================================================================
- * File: frontend/src/components/__tests__/ApiClient.test.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * FILE: frontend/src/components/__tests__/ApiClient.test.tsx
+ * PURPOSE: Stadium Sync — API Client Configuration Tests. Verifies the Axios client setup: - Base URL configuration for development/production - Content-Type header is set to JSON - Request interceptors are registered - Response interceptors handle 401/403 errors
+ * ARCHITECTURE: React/Vite/TypeScript component
+ * INPUTS: Standard module props or API responses
+ * OUTPUTS: Rendered DOM or internal logic
+ * HACKATHON VERTICAL: Fan Experience & Navigation
  * ============================================================================
- */
-/**
- * Stadium Sync — API Client Configuration Tests.
- *
- * Verifies the Axios client setup:
- * - Base URL configuration for development/production
- * - Content-Type header is set to JSON
- * - Request interceptors are registered
- * - Response interceptors handle 401/403 errors
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 

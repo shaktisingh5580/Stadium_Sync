@@ -1,20 +1,12 @@
 /**
  * ============================================================================
- * File: frontend/src/components/__tests__/useChat.test.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * FILE: frontend/src/components/__tests__/useChat.test.tsx
+ * PURPOSE: Stadium Sync — useChat Hook Tests. Verifies the chat state management hook: - Initializes with empty messages - Returns expected interface (messages, sendMessage, isLoading) - Manages loading state correctly
+ * ARCHITECTURE: React/Vite/TypeScript component
+ * INPUTS: Standard module props or API responses
+ * OUTPUTS: Rendered DOM or internal logic
+ * HACKATHON VERTICAL: Fan Experience & Navigation
  * ============================================================================
- */
-/**
- * Stadium Sync — useChat Hook Tests.
- *
- * Verifies the chat state management hook:
- * - Initializes with empty messages
- * - Returns expected interface (messages, sendMessage, isLoading)
- * - Manages loading state correctly
  */
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';

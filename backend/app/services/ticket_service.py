@@ -1,24 +1,17 @@
 """
 ===============================================================================
 File: backend/app/services/ticket_service.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: QR ticket validation and authentication - decodes QR payload, verifies 
+         HMAC-SHA256 checksum, validates ticket in database, builds fan session 
+         with seat and accessibility info.
+Architecture: Decode QR JSON → verify checksum vs SIGNING_KEY → query Ticket 
+             table → load relationships (Seat, Section) → build FanSession → 
+             return for JWT encoding.
+Inputs: QR payload (JSON: ticket_id, match_id, checksum).
+Outputs: Validated FanSession with ticket, seat, accessibility, transit data; 
+         marks ticket as scanned.
+Hackathon Vertical: Security & Authentication
 ===============================================================================
-"""
-"""
-Stadium Sync — Ticket Service.
-
-Handles QR code decoding, ticket validation, and fan session creation.
-
-QR Payload Format (JSON):
-{
-    "ticket_id": "uuid-string",
-    "match_id": "M2026-QF1",
-    "checksum": "abc123"
-}
 """
 
 import hashlib
@@ -97,7 +90,7 @@ def _compute_checksum(ticket_id: str, match_id: str) -> str:
     raw = f"{ticket_id}:{match_id}".encode()
     return hmac.new(
         settings.TICKET_QR_SIGNING_KEY.encode(), raw, hashlib.sha256
-    ).hexdigest()[:12]
+    ).hexdigest()
 
 
 def generate_qr_payload(ticket_id: str, match_id: str) -> str:
@@ -175,6 +168,10 @@ def build_fan_session(ticket: Ticket) -> FanSession:
     """
     seat = ticket.seat
     section = seat.section
+    
+    if seat.svg_x is None or seat.svg_y is None:
+        logger.error(f"Data integrity error: Seat {seat.id} missing SVG coordinates.")
+        raise ValueError(f"Seat {seat.id} missing SVG coordinates. Data integrity error.")
 
     seat_info = SeatInfo(
         id=seat.id,

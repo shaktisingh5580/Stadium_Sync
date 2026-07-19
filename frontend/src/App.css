@@ -1,9 +1,14 @@
 /**
- * Stadium Sync — App Component Styles (App.css).
- *
- * Page-level layout and animation styles for the root App component,
- * including QR scanner transitions, loading screens, and counter displays.
+ * ===============================================================================
+ * File: frontend/src/App.css
+ * Purpose: App component-level styles - layout, transitions, responsive design.
+ * Architecture: Scoped styles for App component and immediate children.
+ * Inputs: None (stylesheet).
+ * Outputs: Component-specific styling.
+ * Hackathon Vertical: Accessibility & Code Quality
+ * ===============================================================================
  */
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;

@@ -1,21 +1,18 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/components/sidebar/EcoVisionPanel.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Eco-vision camera UI - capture waste image, send to Gemini 
+ *          classification, display result (type, bin color, eco fact), route 
+ *          to nearest bin.
+ * Architecture: Camera capture button, image preview, classification result 
+ *               display. On submit: send base64 to backend → Gemini Vision 
+ *               → show result + nearest bin route.
+ * Inputs: Camera permission, image from user.
+ * Outputs: Classification result, bin location, environmental fact.
+ * Hackathon Vertical: Sustainability & Accessibility
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Eco-Vision AI Waste Classification Panel.
- *
- * Sustainability feature: fans capture a photo of waste items and Gemini Vision
- * analyzes the image to classify it as Compost, Recycle, Landfill, or Special.
- * Returns the correct bin color, disposal instructions, and a fun environmental fact.
- * All classifications are logged in the eco_classifications table for analytics.
- */
+
 import { useState } from 'react';
 import { Upload, Leaf, CheckCircle2, Loader2 } from 'lucide-react';
 import { GlowCard } from '../shared/GlowCard';

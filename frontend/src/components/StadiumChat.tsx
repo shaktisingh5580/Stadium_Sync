@@ -1,28 +1,18 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/components/StadiumChat.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Primary fan interface - chat UI + map display orchestration. 
+ *          Renders message list, input field, and integrates map component 
+ *          to show AI-suggested routes.
+ * Architecture: Main component combining useChat hook with StadiumMap 
+ *               rendering. Animates messages, shows loading state, displays 
+ *               map when navigation suggested.
+ * Inputs: Fan session (ticket, seat, accessibility), WebSocket events.
+ * Outputs: Chat UI with route visualization.
+ * Hackathon Vertical: Navigation & Real-Time Decision Support
+ * ===============================================================================
  */
-/**
- * Stadium Sync — StadiumChat (Primary Fan Interface).
- *
- * The central hub of the fan experience, combining:
- * - AI Chat: A Gemini-powered conversational concierge that handles navigation,
- *   accessibility queries, multilingual assistance, and eco-vision waste classification.
- * - Stadium Map: An interactive SVG-based map with real-time crowd density heatmap,
- *   seat highlighting, and animated egress route rendering.
- * - Sidebar Panels: Transit method selection, incident reporting, and eco-vision camera.
- * - Real-Time Alerts: WebSocket-driven egress notifications, emergency evacuations,
- *   flash sale promotions, and incident resolution updates.
- *
- * This component orchestrates state across useChat, useRealtime, and the API layer
- * to deliver a cohesive, responsive, and accessible fan experience.
- */
+
 import React, { useState, useEffect } from 'react';
 import { AnimatedAIChat } from './ui/animated-ai-chat';
 import { useChat } from '@/hooks/useChat';

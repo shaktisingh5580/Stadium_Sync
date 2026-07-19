@@ -1,4 +1,14 @@
 """
+===============================================================================
+FILE: backend/tests/phase5_test_realtime.py
+PURPOSE: Core Backend Application Module.
+ARCHITECTURE: Python/FastAPI module
+INPUTS: Standard application requests
+OUTPUTS: Structured models and responses
+HACKATHON VERTICAL: Code Quality & Testing
+===============================================================================
+"""
+"""
 Stadium Sync — Phase 5 Test Script: Crowd Density, Egress Agent, WebSocket
 
 Tests:
@@ -11,7 +21,6 @@ Tests:
   7. GET /egress/route returns fan's pre-computed route
   8. WebSocket connects with valid token and responds to ping
 """
-
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession

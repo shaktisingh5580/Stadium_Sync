@@ -1,19 +1,14 @@
 """
 ===============================================================================
 File: backend/app/api/v1/navigation.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Navigation API - fan sets transit preference, routes to nearest 
+         station/exit of chosen type (metro/bus/rideshare/parking).
+Architecture: POST /navigation/transit (set preference) → GET /navigation/route 
+             (compute route to matching transit).
+Inputs: Transit preference (enum), fan seat.
+Outputs: Route to transit station, accessibility safe path.
+Hackathon Vertical: Navigation & Transportation
 ===============================================================================
-"""
-"""
-Stadium Sync — Navigation API Routes.
-
-Endpoints:
-    POST /api/v1/navigation/transit     — Set post-match transit method
-    GET  /api/v1/navigation/route       — Get dynamic egress route to gate
 """
 
 from typing import Any, Dict

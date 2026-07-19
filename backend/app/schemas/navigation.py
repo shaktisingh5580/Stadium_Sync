@@ -1,17 +1,14 @@
 """
 ===============================================================================
 File: backend/app/schemas/navigation.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Navigation schemas - validates transit preferences and structures 
+         computed exit route responses.
+Architecture: TransitPreferenceRequest (enum: metro/bus/rideshare/parking), 
+             RouteResponse (path coordinates, duration, accessibility_safe).
+Inputs: Fan's transit preference selection.
+Outputs: Computed route to nearest transit station of chosen type.
+Hackathon Vertical: Navigation & Transportation
 ===============================================================================
-"""
-"""
-Stadium Sync — Navigation Schemas.
-
-Pydantic models for transit selection and SVG pathfinding.
 """
 
 from typing import List, Optional

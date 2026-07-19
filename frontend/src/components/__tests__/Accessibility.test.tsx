@@ -1,21 +1,12 @@
 /**
  * ============================================================================
- * File: frontend/src/components/__tests__/Accessibility.test.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * FILE: frontend/src/components/__tests__/Accessibility.test.tsx
+ * PURPOSE: Stadium Sync — Accessibility Tests. Verifies WCAG 2.1 AA compliance features: - Skip navigation link is present in the DOM - Focus indicators CSS classes exist - Screen reader utility class is defined - Reduced motion media query is respected
+ * ARCHITECTURE: React/Vite/TypeScript component
+ * INPUTS: Standard module props or API responses
+ * OUTPUTS: Rendered DOM or internal logic
+ * HACKATHON VERTICAL: Fan Experience & Navigation
  * ============================================================================
- */
-/**
- * Stadium Sync — Accessibility Tests.
- *
- * Verifies WCAG 2.1 AA compliance features:
- * - Skip navigation link is present in the DOM
- * - Focus indicators CSS classes exist
- * - Screen reader utility class is defined
- * - Reduced motion media query is respected
  */
 import { describe, it, expect } from 'vitest';
 

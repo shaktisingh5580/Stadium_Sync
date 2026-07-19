@@ -1,26 +1,16 @@
 """
 ===============================================================================
 File: backend/app/core/rate_limiter.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Request rate limiting via SlowAPI - prevents DDoS, brute-force 
+         attacks, and fair-queues API access. Per-endpoint and per-user 
+         limits (auth: 10/min, AI: 20/min, IoT: 300/min).
+Architecture: SlowAPI uses Redis backend (or in-memory fallback) to track 
+             request counts with TTL windows. Decorators like 
+             @limiter.limit("10/minute") applied to route handlers.
+Inputs: Limiter configuration from settings (rate limits per endpoint).
+Outputs: 429 Too Many Requests response when limit exceeded.
+Hackathon Vertical: Security & Authentication
 ===============================================================================
-"""
-"""
-Stadium Sync — Rate Limiter Setup.
-
-Uses SlowAPI with sliding-window rate limiting.
-Supports Redis backend (production) or in-memory (dev).
-
-Rate Limit Tiers:
-    Tier 1 — Auth:              10/minute   (brute force prevention)
-    Tier 2 — AI Endpoints:      10/minute   (Gemini cost control)
-    Tier 3 — Standard Read:     60/minute   (normal usage)
-    Tier 4 — Frequent Write:    120/minute  (volunteer location)
-    Tier 5 — IoT Ingest:        300/minute  (machine-to-machine)
-    Tier 6 — Health:            Unlimited   (monitoring probes)
 """
 
 import logging

@@ -1,17 +1,14 @@
 """
 ===============================================================================
 File: backend/app/schemas/incident.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
+Purpose: Incident schemas - validates incident reports and structures AI 
+         triage responses with severity/category/action.
+Architecture: IncidentReportRequest (description), IncidentTriageResponse 
+             (severity enum, category enum, recommended_actions).
+Inputs: Fan/volunteer incident description.
+Outputs: AI-determined severity level and category for automation + dispatch.
 Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
 ===============================================================================
-"""
-"""
-Stadium Sync — Incident Schemas.
-
-Pydantic models for incident reporting, triage, and tracking.
 """
 
 from datetime import datetime

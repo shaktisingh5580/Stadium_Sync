@@ -1,18 +1,17 @@
 """
 ===============================================================================
 File: backend/app/models/stadium.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Stadium layout and infrastructure models - defines stadium geometry 
+         (sections, gates, amenities) with SVG coordinates for digital twin 
+         rendering and routing algorithms.
+Architecture: Stadium (match venue), Section (seating), Gate (entry/exit), 
+             Amenity (POIs like restrooms, food, medical). All have SVG 
+             coordinates (x, y) for precise map rendering.
+Inputs: Stadium configuration (loaded at match start from database).
+Outputs: Geometry data for routing algorithms, POI locations, accessible 
+         amenities, digital twin visualization.
+Hackathon Vertical: Navigation & Accessibility
 ===============================================================================
-"""
-"""
-Stadium Sync — Stadium Amenity and Waste Bin Models.
-
-Tracks restrooms, food courts, first-aid stations, and waste bins
-with SVG coordinates for map rendering.
 """
 
 import enum

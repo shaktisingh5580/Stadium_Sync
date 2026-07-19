@@ -1,23 +1,17 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/api/client.ts
- * Purpose: Axios HTTP Client Configuration.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Configured Axios instance for all API calls.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Axios HTTP client configuration - sets base URL, request/response 
+ *          interceptors, JWT token auto-injection, error handling.
+ * Architecture: Creates Axios instance with interceptors: request adds 
+ *               Authorization header from sessionStorage; response handles 401 
+ *               (token expired) by triggering refresh/logout.
+ * Inputs: VITE_API_URL environment variable, JWT token from sessionStorage.
+ * Outputs: Configured Axios instance for API calls with auto-token management.
+ * Hackathon Vertical: Security & Authentication
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Axios HTTP Client Configuration.
- *
- * Creates a pre-configured Axios instance that:
- * - Points to the FastAPI backend (auto-detects dev vs. production via VITE_API_URL).
- * - Attaches the JWT Bearer token to every outgoing request.
- * - Automatically clears the session and reloads on 401/403 responses (expired tokens).
- *
- * This module is the single source of truth for all API calls in the frontend.
- */
+
 import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL || (

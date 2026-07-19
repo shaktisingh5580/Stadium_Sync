@@ -1,16 +1,18 @@
 """
 ===============================================================================
 File: backend/app/core/audit_logger.py
-Purpose: Operational event audit logging.
-Architecture: FastAPI backend module.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Compliance and security audit trail - immutably logs all sensitive 
+         operations (ticket scans, token issuance, incidents, admin actions) 
+         for investigation and regulatory compliance.
+Architecture: Async audit logging with PostgreSQL persistence. Each log entry 
+             is immutable (no updates, only inserts) with timestamp, actor ID, 
+             resource ID, outcome, and rich context (IP, details JSON).
+Inputs: Audit events from various services (auth, incidents, admin, etc.) with 
+        action type, actor, resource, details, and status.
+Outputs: Immutable audit_logs table records for compliance, forensics, and 
+         real-time security monitoring (e.g., detect abuse patterns).
+Hackathon Vertical: Security & Authentication
 ===============================================================================
-"""
-"""Operational event audit logger.
-
-In a production Render deployment, this module would pipe audit events to
-Cloud Logging or BigQuery. For the hackathon demo, events are logged
-at INFO level for observability.
 """
 
 import logging

@@ -1,21 +1,17 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/components/sidebar/IncidentPanel.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Incident reporting UI - fan describes problem, category selector, 
+ *          auto-triage via Gemini (severity, category, recommended action).
+ * Architecture: Text input for description, category dropdown (medical, 
+ *               security, facilities, other), submit button. On submit: send 
+ *               to backend → Gemini triage → show result + dispatch status.
+ * Inputs: Incident description, category hint.
+ * Outputs: AI triage result (severity, category, action), dispatch confirmation.
+ * Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Incident Reporting Panel.
- *
- * Allows fans to report issues (spills, medical, safety, overcrowding) with a
- * text description and optional photo. Reports are sent to POST /incidents/,
- * where Gemini AI triages the severity, categorizes the issue, and auto-dispatches
- * the nearest available volunteer. Fans receive real-time status updates via WebSocket.
- */
+
 import React, { useState } from 'react';
 import { AlertTriangle, Send, Loader2 } from 'lucide-react';
 import { GlowButton } from '../shared/GlowButton';

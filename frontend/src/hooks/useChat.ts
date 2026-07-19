@@ -1,24 +1,16 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/hooks/useChat.ts
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Chat state management hook - maintains message history, sends 
+ *          queries to backend, handles loading/error states.
+ * Architecture: useChat() hook returns: messages[], loading, error, sendMessage() 
+ *               function. Manages optimistic UI updates and error recovery.
+ * Inputs: Initial messages, fan context.
+ * Outputs: Chat state, methods to add messages and send queries.
+ * Hackathon Vertical: Navigation & Real-Time Decision Support
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Chat State Hook (useChat).
- *
- * Manages the conversational state between the fan and the Gemini AI concierge:
- * - Persists chat history to sessionStorage for session continuity.
- * - Sends messages to the /chat endpoint with full conversation history for context.
- * - Handles Gemini's UI action directives (SHOW_MAP, SHOW_ROUTE, etc.) which drive
- *   the frontend's agentic behavior — the AI can trigger map views, route displays,
- *   eco-vision results, and incident dispatches through natural language.
- * - Provides graceful error handling with user-friendly fallback messages.
- */
+
 import { useState, useCallback, useEffect } from 'react';
 import { sendChatMessage } from '@/api';
 

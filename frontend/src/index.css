@@ -1,12 +1,16 @@
 /**
- * Stadium Sync — Global Design System (index.css).
- *
- * Defines the core design tokens (CSS custom properties) for the dark-mode stadium theme,
- * component-level utility classes (glass-panel, glow-card, glow-button), custom scrollbar
- * styling, and WCAG 2.1 AA accessibility features (skip-nav, focus indicators, reduced motion).
- *
- * All color values use HSL format for consistent theming across components.
+ * ===============================================================================
+ * File: frontend/src/index.css
+ * Purpose: Global CSS styles - defines CSS variables (colors, sizes), base 
+ *          element styles, utility classes, animations.
+ * Architecture: Loaded globally in main.tsx. CSS variables enable theme 
+ *               switching. Utilities like .fadeIn, .slideUp for animations.
+ * Inputs: None (stylesheet).
+ * Outputs: Global styling applied to entire app.
+ * Hackathon Vertical: Accessibility & Code Quality
+ * ===============================================================================
  */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

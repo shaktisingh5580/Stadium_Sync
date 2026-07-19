@@ -1,23 +1,16 @@
 /**
- * ============================================================================
+ * ===============================================================================
  * File: frontend/src/components/ui/message-bubble.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
- * ============================================================================
+ * Purpose: Reusable message bubble component - renders fan or AI message 
+ *          with appropriate styling (left/right alignment), timestamp, role.
+ * Architecture: Takes message object with content, sender (fan/AI), timestamp. 
+ *               Returns JSX with conditional alignment and styling.
+ * Inputs: Message object {content, sender, timestamp}.
+ * Outputs: Rendered message bubble JSX.
+ * Hackathon Vertical: Accessibility & Code Quality
+ * ===============================================================================
  */
-/**
- * Stadium Sync — Chat Message Bubble Component.
- *
- * Renders individual chat messages with role-based styling:
- * - User messages: Right-aligned with primary accent color
- * - Assistant messages: Left-aligned with neutral background and AI avatar
- * - System messages: Centered with muted styling
- *
- * Uses Framer Motion for entrance animations and supports markdown content.
- */
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -40,6 +33,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         "flex w-full gap-4 p-4",
         isUser ? "flex-row-reverse" : "flex-row"
       )}
+      role="listitem"
+      aria-label={isUser ? "Your message" : "AI Concierge response"}
     >
       <div className={cn(
         "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg",
@@ -55,7 +50,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         <div className={cn(
           "px-4 py-3 rounded-2xl backdrop-blur-md shadow-xl text-sm leading-relaxed",
           isUser 
-            ? "bg-emerald-500 text-white rounded-tr-sm" 
+            ? "bg-emerald-700 text-white rounded-tr-sm" 
             : "bg-white/[0.03] border border-white/[0.05] text-white/90 rounded-tl-sm"
         )}>
           {/* Extremely basic markdown parsing for bold text */}

@@ -1,21 +1,16 @@
 """
 ===============================================================================
 File: backend/app/api/deps.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Dependency injection utilities - provides reusable FastAPI Depends() 
+         functions for database sessions, JWT authentication, admin 
+         authorization.
+Architecture: get_db() → AsyncSession (auto-commit/rollback), get_current_user() 
+             → verified JWT payload, get_admin_user() → admin-only verification.
+Inputs: FastAPI Request (headers for JWT extraction), database engine.
+Outputs: Injected dependencies: database sessions, authenticated user context, 
+         admin verification.
+Hackathon Vertical: Security & Authentication
 ===============================================================================
-"""
-"""
-Stadium Sync — Dependency Injection.
-
-Provides FastAPI dependencies for:
-- Database sessions
-- JWT authentication (fan, volunteer, admin)
-- API key validation (IoT endpoints)
-- Redis client
 """
 
 import secrets
@@ -61,7 +56,7 @@ async def get_current_user(
     if not token:
         raise UnauthorizedException("Missing authentication token")
 
-    payload = verify_token(token)
+    payload = await verify_token(token)
 
     # Attach to request state for downstream use
     request.state.current_user = payload

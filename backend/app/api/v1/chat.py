@@ -1,22 +1,16 @@
 """
 ===============================================================================
 File: backend/app/api/v1/chat.py
-Purpose: Core Backend Application Module.
-Architecture: FastAPI backend module.
-Inputs: standard API requests or internal service calls.
-Outputs: structured responses/models.
-Hackathon Vertical: Operational Intelligence & Real-Time Decision Support
+Purpose: Fan AI concierge endpoint - natural language queries answered by 
+         Gemini with stadium context (navigation, amenities, rules, 
+         accessibility, transit).
+Architecture: POST /chat accepts query + fan context → enriches with stadium 
+             data → sends to Gemini → returns response + UI action (SHOW_ROUTE, 
+             SHOW_POI, etc.).
+Inputs: Fan query (natural language), fan session context.
+Outputs: AI response with navigation directions, POI info, UI action command.
+Hackathon Vertical: Navigation, Multilingual Assistance, Accessibility
 ===============================================================================
-"""
-"""
-Stadium Sync — Chat API Route.
-
-The single agentic endpoint that powers the conversational UI.
-All fan interactions flow through this route — it orchestrates
-navigation, eco-vision, incidents, and crowd data internally.
-
-Endpoints:
-    POST /api/v1/chat  — Send a message, get AI response + UI action
 """
 
 import logging

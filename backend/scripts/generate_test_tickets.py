@@ -1,18 +1,13 @@
 """
-Stadium Sync — Test Ticket Seeder Script.
-
-Seeds the database with:
-- 1 Stadium (MetLife Stadium)
-- 8 Sections (N101-N104, S201-S204)
-- 4 Gates (North, South, East, West)
-- 100 Seats (distributed across sections)
-- 20 Test Tickets with valid QR payloads
-- Amenity points and waste bins per section
-
-Run: python -m scripts.generate_test_tickets
-  or: .venv/Scripts/python -m scripts.generate_test_tickets
+===============================================================================
+FILE: backend/scripts/generate_test_tickets.py
+PURPOSE: Stadium Sync — Test Ticket Seeder Script. Seeds the database with: - 1 Stadium (MetLife Stadium) - 8 Sections (N101-N104, S201-S204) - 4 Gates (North, South, East, West) - 100 Seats (distributed across sections) - 20 Test Tickets with valid QR payloads - Amenity points and waste bins per section Run: python -m scripts.generate_test_tickets or: .venv/Scripts/python -m scripts.generate_test_tickets
+ARCHITECTURE: Python/FastAPI module
+INPUTS: Standard application requests
+OUTPUTS: Structured models and responses
+HACKATHON VERTICAL: Operational Intelligence & Real-Time Decision Support
+===============================================================================
 """
-
 import asyncio
 import json
 import sys

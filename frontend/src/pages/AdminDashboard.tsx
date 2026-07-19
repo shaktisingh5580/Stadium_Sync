@@ -1,26 +1,12 @@
 /**
  * ============================================================================
- * File: frontend/src/pages/AdminDashboard.tsx
- * Purpose: Frontend Application Module.
- * Architecture: React functional component/module in Vite ecosystem.
- * Inputs: Props, Context, or API data.
- * Outputs: Rendered DOM or functional logic.
- * Hackathon Vertical: Fan Experience & Navigation (FIFA 2026)
+ * FILE: frontend/src/pages/AdminDashboard.tsx
+ * PURPOSE: Stadium Sync — Organizer Command Center (AdminDashboard). Full-featured operations dashboard for venue staff and organizers: - Digital Twin: Real-time stadium visualization with crowd density heatmap - AI Copilot: Admin-facing Gemini chat with live operational context - Incident Board: Live feed of AI-triaged incidents with volunteer assignments - Emergency Controls: One-click evacuation broadcast to all connected fans - Computer Vision: Simulated CV webhook for testing crowd/safety alerts - Flash Sales: AI-driven vendor promotion targeting based on crowd flow Connects via WebSocket for real-time updates and polls /admin/state for data. Protected by admin-role JWT authentication.
+ * ARCHITECTURE: React/Vite/TypeScript component
+ * INPUTS: Standard module props or API responses
+ * OUTPUTS: Rendered DOM or internal logic
+ * HACKATHON VERTICAL: Fan Experience & Navigation
  * ============================================================================
- */
-/**
- * Stadium Sync — Organizer Command Center (AdminDashboard).
- *
- * Full-featured operations dashboard for venue staff and organizers:
- * - Digital Twin: Real-time stadium visualization with crowd density heatmap
- * - AI Copilot: Admin-facing Gemini chat with live operational context
- * - Incident Board: Live feed of AI-triaged incidents with volunteer assignments
- * - Emergency Controls: One-click evacuation broadcast to all connected fans
- * - Computer Vision: Simulated CV webhook for testing crowd/safety alerts
- * - Flash Sales: AI-driven vendor promotion targeting based on crowd flow
- *
- * Connects via WebSocket for real-time updates and polls /admin/state for data.
- * Protected by admin-role JWT authentication.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
