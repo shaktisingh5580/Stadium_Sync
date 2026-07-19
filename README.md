@@ -91,22 +91,22 @@ flowchart TD
 sequenceDiagram
     participant Fan
     participant Frontend as React Frontend
-    participant CloudRun as Render (FastAPI)
+    participant Backend as Render (FastAPI)
     participant Gemini as Gemini 2.5 Flash
     participant DB as PostgreSQL / SQLite
 
     Fan->>Frontend: Scan QR Ticket Code
-    Frontend->>CloudRun: POST /auth/scan-ticket {qr_payload}
-    CloudRun->>DB: Verify HMAC checksum + ticket validity
-    DB-->>CloudRun: Ticket valid + seat data
-    CloudRun-->>Frontend: JWT token + fan session
-    Frontend->>CloudRun: WebSocket connect (JWT)
+    Frontend->>Backend: POST /auth/scan-ticket {qr_payload}
+    Backend->>DB: Verify HMAC checksum + ticket validity
+    DB-->>Backend: Ticket valid + seat data
+    Backend-->>Frontend: JWT token + fan session
+    Frontend->>Backend: WebSocket connect (JWT)
 
     Fan->>Frontend: "Where is the nearest restroom?"
-    Frontend->>CloudRun: POST /chat {message, context}
-    CloudRun->>Gemini: Grounded prompt (seat + section + accessibility)
-    Gemini-->>CloudRun: Response + UI_ACTION: SHOW_ROUTE
-    CloudRun-->>Frontend: AI response + route coordinates
+    Frontend->>Backend: POST /chat {message, context}
+    Backend->>Gemini: Grounded prompt (seat + section + accessibility)
+    Gemini-->>Backend: Response + UI_ACTION: SHOW_ROUTE
+    Backend-->>Frontend: AI response + route coordinates
     Frontend->>Fan: Display animated route on SVG map
 ```
 
@@ -116,23 +116,23 @@ sequenceDiagram
 sequenceDiagram
     participant Admin
     participant Dashboard as Admin Dashboard
-    participant CloudRun as Render (FastAPI)
+    participant Backend as Render (FastAPI)
     participant Gemini as Gemini 2.5 Flash
     participant WS as WebSocket Manager
 
     Admin->>Dashboard: Open Operations Center
-    Dashboard->>CloudRun: GET /admin/state
-    CloudRun-->>Dashboard: Digital twin snapshot (crowd + incidents)
+    Dashboard->>Backend: GET /admin/state
+    Backend-->>Dashboard: Digital twin snapshot (crowd + incidents)
 
     Admin->>Dashboard: "What's the crowd situation?"
-    Dashboard->>CloudRun: POST /admin/chat
-    CloudRun->>Gemini: Query with full operational context
-    Gemini-->>CloudRun: Strategic recommendations
-    CloudRun-->>Dashboard: AI briefing
+    Dashboard->>Backend: POST /admin/chat
+    Backend->>Gemini: Query with full operational context
+    Gemini-->>Backend: Strategic recommendations
+    Backend-->>Dashboard: AI briefing
 
     Admin->>Dashboard: Trigger Emergency Evacuation
-    Dashboard->>CloudRun: POST /admin/evacuate
-    CloudRun->>WS: Broadcast to ALL connected fans
+    Dashboard->>Backend: POST /admin/evacuate
+    Backend->>WS: Broadcast to ALL connected fans
     WS-->>Fan: ⚠️ Evacuation alert + personalized exit route
 ```
 
@@ -162,20 +162,20 @@ flowchart LR
     Fan(["🎉 Fan"]) -->|"QR scan + chat"| C["⚛️ React 19 + Vite"]
     Vol(["👷 Volunteer"]) -->|"dispatch + triage"| C
     Ops(["📊 Organizer"]) -->|"dashboard + copilot"| C
-    C -->|"HTTPS + JWT"| CR["🚂 FastAPI on Render"]
-    C -->|"WSS"| CR
-    CR -->|"grounded prompts"| G["✨ Gemini 2.5 Flash"]
-    CR -->|"async ORM"| DB[("🐘 PostgreSQL / SQLite")]
-    CR -->|"caching"| RD[("⚡ Redis")]
-    ENV["🔐 Env Variables"] -->|"GEMINI_API_KEY"| CR
-    IoT["📡 IoT Sensors"] -->|"X-API-Key"| CR
-    CVN["📷 CV Edge Nodes"] -->|"X-API-Key"| CR
+    C -->|"HTTPS + JWT"| API["🚂 FastAPI on Render"]
+    C -->|"WSS"| API
+    API -->|"grounded prompts"| G["✨ Gemini 2.5 Flash"]
+    API -->|"async ORM"| DB[("🐘 PostgreSQL / SQLite")]
+    API -->|"caching"| RD[("⚡ Redis")]
+    ENV["🔐 Env Variables"] -->|"GEMINI_API_KEY"| API
+    IoT["📡 IoT Sensors"] -->|"X-API-Key"| API
+    CVN["📷 CV Edge Nodes"] -->|"X-API-Key"| API
 
     style Fan fill:#1e40af,color:#fff
     style Vol fill:#059669,color:#fff
     style Ops fill:#d97706,color:#fff
     style C fill:#2563eb,color:#fff
-    style CR fill:#059669,color:#fff
+    style API fill:#059669,color:#fff
     style G fill:#f59e0b,color:#000
     style DB fill:#6366f1,color:#fff
     style RD fill:#ef4444,color:#fff
