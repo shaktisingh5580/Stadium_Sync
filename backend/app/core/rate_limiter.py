@@ -113,3 +113,31 @@ def setup_rate_limiter(app: FastAPI) -> None:
         f"(storage={'redis' if settings.REDIS_URL else 'memory'}, "
         f"default={settings.RATE_LIMIT_DEFAULT})"
     )
+
+
+async def check_ticket_abuse(ticket_id: str) -> bool:
+    """
+    Check if a ticket is being scanned excessively in a short window.
+    Returns True if safe, False if abuse detected.
+    """
+    if not settings.REDIS_ENABLED:
+        return True
+        
+    from app.core.redis_client import get_redis
+    redis = await get_redis()
+    if not redis:
+        return True
+        
+    key = f"abuse:ticket:{ticket_id}"
+    try:
+        count = await redis.incr(key)
+        if count == 1:
+            await redis.expire(key, 900)  # 15 minute window
+            
+        if count > 20:
+            logger.warning(f"🚨 Ticket abuse detected for ticket {ticket_id}: {count} scans in 15m")
+            return False
+    except Exception as e:
+        logger.error(f"Failed to check ticket abuse: {e}")
+        
+    return True

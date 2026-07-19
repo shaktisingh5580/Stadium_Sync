@@ -24,6 +24,7 @@ from app.models.stadium import (
     AmenityPoint, AmenityType, WasteBin, BinType,
 )
 from app.services.ticket_service import generate_qr_payload
+from sqlalchemy import select
 
 
 # ── Stadium Data ──
@@ -70,6 +71,12 @@ async def seed_database():
     print("=" * 50)
 
     async with get_db_context() as db:
+        # Check if already seeded
+        existing = await db.execute(select(Stadium).where(Stadium.id == STADIUM["id"]))
+        if existing.scalar_one_or_none():
+            print("✅ Database is already seeded. Run this on a fresh database to re-seed.")
+            return
+
         # ── 1. Create Stadium ──
         stadium = Stadium(
             id=STADIUM["id"],

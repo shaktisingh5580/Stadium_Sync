@@ -22,7 +22,7 @@ from jose import JWTError, jwt
 
 from app.core.config import get_settings
 from app.core.exceptions import UnauthorizedException
-from app.core.redis_client import redis_client
+from app.core.redis_client import get_redis
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -108,8 +108,9 @@ async def verify_token(token: str) -> Dict[str, Any]:
         if not jti:
             raise UnauthorizedException("Invalid token: missing JTI")
 
-        if settings.REDIS_ENABLED and redis_client:
-            if await redis_client.exists(f"revoked_token:{jti}"):
+        if settings.REDIS_ENABLED:
+            redis = await get_redis()
+            if redis and await redis.exists(f"revoked_token:{jti}"):
                 raise UnauthorizedException("Token has been revoked")
 
         return payload

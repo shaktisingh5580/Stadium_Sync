@@ -21,8 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
 from app.core.config import get_settings
-from app.core.redis_client import redis_client
-
+from app.core.redis_client import get_redis
 from app.core.rate_limiter import limiter, check_ticket_abuse
 from app.core.security import (
     create_access_token,
@@ -95,12 +94,14 @@ async def scan_ticket(
     if not await check_ticket_abuse(ticket_id):
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Ticket abuse detected. Too many scans.")
 
-    if settings.REDIS_ENABLED and redis_client:
-        replay_key = f"ticket_scan:{ticket_id}:{match_id}"
-        if await redis_client.exists(replay_key):
-            logger.warning(f"🚨 Replay attack detected: {ticket_id}")
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ticket scan attempted too quickly; possible replay attack")
-        await redis_client.setex(replay_key, 60, "scanned")
+    if settings.REDIS_ENABLED:
+        redis = await get_redis()
+        if redis:
+            replay_key = f"ticket_scan:{ticket_id}:{match_id}"
+            if await redis.exists(replay_key):
+                logger.warning(f"🚨 Replay attack detected: {ticket_id}")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ticket scan attempted too quickly; possible replay attack")
+            await redis.setex(replay_key, 60, "scanned")
 
     logger.info(f"QR scanned: ticket={ticket_id}, match={match_id}")
 
